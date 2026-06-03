@@ -47,8 +47,8 @@ def parse_xml_blob(xml_blob: str) -> Dict[str, Any]:
         }
 
     Raises:
-        XmlParseError: if the XML is malformed or the root tag is wrong.
-        KeyError:      if a required tag is missing entirely (caught upstream).
+        XmlParseError: if the XML is malformed, the root tag is wrong,
+                       or a required tag is missing from the blob.
     """
     try:
         root = ET.fromstring(xml_blob.strip())
