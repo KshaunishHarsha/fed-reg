@@ -15,11 +15,9 @@ Endpoints (Step 1 scope):
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
 
 import httpx
-from fastapi import APIRouter, HTTPException, status
-from pydantic import ValidationError
+from fastapi import APIRouter, Body, HTTPException, status
 
 from phase_3.models import IngestPayload, ValidationResult
 from phase_3.validator import validate_blob
@@ -124,11 +122,16 @@ async def _ingest_with_retry(payload: IngestPayload) -> ValidationResult:
                 exc,
             )
             # Treat a failed correction call as exhausted retries.
-            result.error_detail = (
-                f"{result.error_detail}\n\n"
-                f"[Phase 2 correction call also failed: {exc}]"
+            # Build a new result rather than mutating the Pydantic model in place.
+            return ValidationResult(
+                document_number=result.document_number,
+                passed=False,
+                error_detail=(
+                    f"{result.error_detail}\n\n"
+                    f"[Phase 2 correction call also failed: {exc}]"
+                ),
+                url_stripped=result.url_stripped,
             )
-            return result
 
     # Should not reach here, but satisfy type checker
     return result  # type: ignore[return-value]
@@ -196,13 +199,9 @@ async def ingest(payload: IngestPayload) -> ValidationResult:
 
     return result
 
-
 # ---------------------------------------------------------------------------
-# GET /phase3/validate/test  — dev/admin utility
+# POST /phase3/validate/test  — dev/admin utility
 # ---------------------------------------------------------------------------
-
-from fastapi import Body  # noqa: E402 (late import keeps top cleaner)
-
 
 @router.post(
     "/validate/test",
