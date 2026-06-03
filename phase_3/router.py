@@ -3,23 +3,31 @@ phase_3/router.py
 -----------------
 FastAPI router for Phase 3. Mounted at prefix /phase3 in the main app.
 
-Only Step 1 (validation + retry loop) is implemented in this file.
-Steps 2-4 (persistence, digest compilation, platform handoff) will be
-added in later development sprints.
+Implemented steps:
+  Step 1 — Validation + self-correction retry loop
+  Step 2 — Database storage and idempotency fail-safe
 
-Endpoints (Step 1 scope):
-  POST /phase3/ingest          - Receive Phase 2 payload, validate, retry if needed
-  GET  /phase3/validate/test   - Dev utility: validate a raw XML blob directly
+Steps 3-4 (digest compilation, platform handoff) will be added in later sprints.
+
+Endpoints:
+  POST /phase3/ingest                    - Receive Phase 2 payload, validate, persist
+  GET  /phase3/status/{document_number}  - Check pipeline_state for a document
+  POST /phase3/validate/test             - Dev utility: validate XML blob in isolation
 """
 
 from __future__ import annotations
 
 import logging
+from typing import Optional
 
 import httpx
-from fastapi import APIRouter, Body, HTTPException, status
+from fastapi import APIRouter, Body, HTTPException, Path, status
+from pydantic import BaseModel
+from sqlalchemy import text
 
+from phase_3.db import get_session_factory
 from phase_3.models import IngestPayload, ValidationResult
+from phase_3.persistence import PersistenceResult, persist_validated_document
 from phase_3.validator import validate_blob
 
 logger = logging.getLogger(__name__)
@@ -137,21 +145,30 @@ async def _ingest_with_retry(payload: IngestPayload) -> ValidationResult:
     return result  # type: ignore[return-value]
 
 
+
+class IngestResponse(BaseModel):
+    """Combined Step 1 + Step 2 outcome returned from POST /phase3/ingest."""
+    document_number: str
+    validation: ValidationResult
+    persistence: Optional[PersistenceResult] = None
+
+
 # ---------------------------------------------------------------------------
 # POST /phase3/ingest
 # ---------------------------------------------------------------------------
 
 @router.post(
     "/ingest",
-    response_model=ValidationResult,
-    summary="Receive a Phase 2 summary, validate, and persist (Step 1 only for now).",
+    response_model=IngestResponse,
+    summary="Receive a Phase 2 summary, validate (Step 1), and persist (Step 2).",
     responses={
-        200: {"description": "Validation passed. Document accepted."},
-        422: {"description": "Validation failed after all retry attempts."},
+        200: {"description": "Validation passed and document cached. was_cached=True means free cache hit."},
+        422: {"description": "Validation failed after all retry attempts. Document excluded from digest."},
+        500: {"description": "Persistence failed after validation passed."},
         503: {"description": "Unexpected internal error during validation."},
     },
 )
-async def ingest(payload: IngestPayload) -> ValidationResult:
+async def ingest(payload: IngestPayload) -> IngestResponse:
     """
     Entry point for Phase 2 → Phase 3 handoff.
 
@@ -159,36 +176,36 @@ async def ingest(payload: IngestPayload) -> ValidationResult:
       - document_record: metadata row from the `documents` table
       - xml_summary_blob: exact XML string from `summaries.xml_summary_blob`
 
-    Phase 3:
-      1. Parses the XML blob.
-      2. Runs Pydantic v2 validation.
-      3. On failure: sends error_detail back to Phase 2 for correction (up to
-         MAX_RETRIES times) via PHASE2_CORRECTION_URL.
-      4. Returns ValidationResult with passed=True on success, or raises
-         HTTP 422 with structured error detail after exhausted retries.
+    Phase 3 Step 1:
+      Parses and validates the XML blob. On failure, sends error_detail back
+      to Phase 2 for correction (up to MAX_RETRIES times). Raises HTTP 422
+      after exhausted retries.
 
-    Steps 2-4 (DB persistence, digest compilation, delivery) will be wired
-    into this endpoint in later sprints once those modules are built.
+    Phase 3 Step 2:
+      Promotes documents.pipeline_state from SUMMARY_GENERATED → DIGEST_SENT
+      using document_number as the unique key. Idempotent: if already at
+      DIGEST_SENT, returns was_cached=True without a second write.
+
+    Steps 3-4 (digest compilation, delivery) will be wired in later sprints.
     """
+    doc_number = payload.document_record.document_number
+
+    # -- Step 1: Validate ---------------------------------------------------
     try:
-        result = await _ingest_with_retry(payload)
+        validation_result = await _ingest_with_retry(payload)
     except Exception as exc:
-        logger.exception(
-            "[%s] Unexpected error during ingest: %s",
-            payload.document_record.document_number,
-            exc,
-        )
+        logger.exception("[%s] Unexpected error during validation: %s", doc_number, exc)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Internal validation error: {exc}",
         )
 
-    if not result.passed:
+    if not validation_result.passed:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
-                "document_number": result.document_number,
-                "error": result.error_detail,
+                "document_number": doc_number,
+                "error": validation_result.error_detail,
                 "message": (
                     f"Document failed validation after {MAX_RETRIES + 1} "
                     "attempt(s) and has been excluded from the digest. "
@@ -197,7 +214,81 @@ async def ingest(payload: IngestPayload) -> ValidationResult:
             },
         )
 
-    return result
+    # -- Step 2: Persist ----------------------------------------------------
+    try:
+        persistence_result = await persist_validated_document(doc_number)
+    except Exception as exc:
+        logger.exception("[%s] Unexpected error during persistence: %s", doc_number, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Validation passed but DB write failed: {exc}",
+        )
+
+    if persistence_result.error:
+        # Persistence returned a soft error (unexpected state, race condition, etc.)
+        # Log it as an error but do NOT hide the validation success.
+        # The caller can inspect the persistence field and decide.
+        logger.error(
+            "[%s] Persistence soft error: %s",
+            doc_number,
+            persistence_result.error,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "document_number": doc_number,
+                "validation": "passed",
+                "persistence_error": persistence_result.error,
+            },
+        )
+
+    return IngestResponse(
+        document_number=doc_number,
+        validation=validation_result,
+        persistence=persistence_result,
+    )
+
+# ---------------------------------------------------------------------------
+# GET /phase3/status/{document_number}  — idempotency inspection
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/status/{document_number}",
+    summary="Return the current pipeline_state of a document (idempotency check).",
+    responses={
+        200: {"description": "Document found. pipeline_state returned."},
+        404: {"description": "Document not found in the database."},
+    },
+)
+async def get_document_status(
+    document_number: str = Path(..., description="Federal document number, e.g. 2026-09841"),
+) -> dict:
+    """
+    Read-only endpoint. Queries `documents.pipeline_state` directly.
+
+    Useful for:
+      - Confirming a document was promoted to DIGEST_SENT.
+      - Checking cache status before re-submitting to /ingest.
+      - Admin / monitoring dashboards.
+
+    Returns: { "document_number": str, "pipeline_state": str }
+    """
+    session_factory = get_session_factory()
+    async with session_factory() as session:
+        row = await session.execute(
+            text("SELECT pipeline_state FROM documents WHERE document_number = :dn"),
+            {"dn": document_number},
+        )
+        record = row.fetchone()
+
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Document '{document_number}' not found in the database.",
+        )
+
+    return {"document_number": document_number, "pipeline_state": record[0]}
+
 
 # ---------------------------------------------------------------------------
 # POST /phase3/validate/test  — dev/admin utility
