@@ -74,16 +74,26 @@ Instructor is a wrapper around the OpenAI client — it belongs in Phase 2, whic
 
 **What happens:**
 
-- The document's `document_number` (e.g. `2026-09841`) is used as the unique primary key for the database row.
-- Before writing, Phase 3 checks for an existing row with that key — if one exists, the write is skipped and the cached version is returned. This idempotency guard ensures the pipeline can safely re-run (e.g. after a crash or scheduler restart) without generating duplicate emails or paying to regenerate LLM summaries.
-- If no row exists, Phase 3 writes the full `SummarizedDocument` envelope to the database, tagging it with:
-  - `status: "approved"` — for documents that passed validation
-  - `status: "flagged"` — for `confidence_tier: "confirmation_required"` borderline documents that still passed formatting checks (displayed in Section C of the digest)
-  - `digest_date: publication_date` — used by the digest builder to query the correct day's entries
+- The document's `document_number` (the federal register's own unique identifier) is used as the primary key in the `documents` table — no new rows or tables are written. Phase 3 only flips the `pipeline_state` column.
+- **Idempotency guard:** Before updating, Phase 3 reads `documents.pipeline_state` for that `document_number`. If it is already `'DIGEST_SENT'`, the write is skipped entirely and `was_cached=True` is returned. The pipeline can safely restart after a crash without generating duplicate emails or paying to re-run the LLM.
+- If the state is `'SUMMARY_GENERATED'` (the expected state after Phase 2 completes), Phase 3 runs: `UPDATE documents SET pipeline_state = 'DIGEST_SENT' WHERE document_number = ? AND pipeline_state = 'SUMMARY_GENERATED'`. The `AND pipeline_state = 'SUMMARY_GENERATED'` guard in the WHERE clause handles race conditions: if two processes simultaneously try to promote the same row, only one UPDATE matches rows — the other sees `rowcount = 0` and logs a warning without corrupting state.
+- If the document does not exist at all (Phase 1/2 never completed), or is in an unexpected state, a structured error is returned and the document is excluded.
 
-**Tech:** Supabase / PostgreSQL via an async SQLAlchemy session. Document number serves as the unique index.
+**Schema writes (Phase 3, Step 2):**
+```
+documents.pipeline_state: 'SUMMARY_GENERATED' → 'DIGEST_SENT'
+```
+No new tables. No new columns. No changes to schema.sql.
 
-**Key file:** `persistence.py`
+**Key files:** `persistence.py`, `db.py`
+
+#### Implementation Notes (Step 2)
+
+**Why only `pipeline_state` and not a separate status column:**  
+The schema (owned by Phase 1) has exactly 3 states and no `validation_attempts` or `was_cached` columns. Those concerns are handled in application memory and returned in the API response — not persisted to the DB. The `pipeline_state` transition is the canonical permanent record.
+
+**Two-step SELECT then UPDATE (not UPSERT):**  
+An `INSERT ... ON CONFLICT DO NOTHING` upsert cannot express the concept of "already cached" vs "freshly written." The explicit SELECT-first approach lets Phase 3 return an accurate `was_cached` flag in the API response, which Phase 2 and admin tooling use to confirm cache hits.
 
 ---
 
