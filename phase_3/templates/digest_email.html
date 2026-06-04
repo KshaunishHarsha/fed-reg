@@ -3,770 +3,790 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Federal Register Sentinel — {{ digest_date.strftime('%B %d, %Y') }}</title>
+  <title>Federal Register Sentinel &#8212; {{ digest_date.strftime('%B %d, %Y') }}</title>
   <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
   <style>
-    /* ------------------------------------------------------------------ */
-    /* Reset                                                               */
-    /* ------------------------------------------------------------------ */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-    table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-    img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
-    a { color: inherit; }
-
-    /* ------------------------------------------------------------------ */
-    /* Base (Apple Minimalist Light)                                       */
-    /* ------------------------------------------------------------------ */
-    body {
-      background-color: #f5f5f7;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      font-size: 15px;
-      line-height: 1.5;
-      color: #1d1d1f;
-      margin: 0;
-      padding: 0;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    .email-wrapper {
-      width: 100%;
-      background-color: #f5f5f7;
-      padding: 32px 16px 48px;
-    }
-
-    .email-container {
-      max-width: 680px;
-      margin: 0 auto;
-      background-color: #ffffff;
-      border-radius: 18px;
-      overflow: hidden;
-      border: 1px solid #e5e5ea;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Header                                                              */
-    /* ------------------------------------------------------------------ */
-    .header {
-      background-color: #fbfbfd;
-      padding: 40px 40px 32px;
-      border-bottom: 1px solid #e5e5ea;
-      text-align: center;
-    }
-
-    .header-eyebrow {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: #86868b;
-      margin-bottom: 8px;
-    }
-
-    .header-title {
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -0.015em;
-      color: #1d1d1f;
-      line-height: 1.2;
-      margin-bottom: 6px;
-    }
-
-    .header-subtitle {
-      font-size: 15px;
-      color: #515154;
-      font-weight: 400;
-    }
-
-    .header-date-chip {
-      display: inline-block;
-      margin-top: 16px;
-      padding: 6px 14px;
-      background: #f5f5f7;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      color: #1d1d1f;
-      letter-spacing: -0.01em;
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Summary bar                                                         */
-    /* ------------------------------------------------------------------ */
-    .summary-bar {
-      display: flex;
-      gap: 0;
-      background-color: #ffffff;
-      border-bottom: 1px solid #e5e5ea;
-    }
-
-    .summary-chip {
-      flex: 1;
-      padding: 16px;
-      text-align: center;
-      border-right: 1px solid #e5e5ea;
-    }
-    .summary-chip:last-child { border-right: none; }
-
-    .summary-chip-count {
-      font-size: 24px;
-      font-weight: 600;
-      line-height: 1;
-      margin-bottom: 4px;
-      letter-spacing: -0.02em;
-    }
-
-    .summary-chip-label {
-      font-size: 11px;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #86868b;
-    }
-
-    .chip-a .summary-chip-count { color: #ff3b30; }
-    .chip-b .summary-chip-count { color: #0071e3; }
-    .chip-c .summary-chip-count { color: #86868b; }
-
-    /* ------------------------------------------------------------------ */
-    /* Section headers                                                     */
-    /* ------------------------------------------------------------------ */
-    .section-header {
-      padding: 28px 32px 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background-color: #ffffff;
-    }
-
-    .section-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 9px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 15px;
-      flex-shrink: 0;
-      text-align: center;
-      line-height: 32px;
-    }
-
-    .section-title {
-      font-size: 14px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .section-subtitle {
-      font-size: 13px;
-      color: #86868b;
-      margin-top: 2px;
-    }
-
-    .section-a-header .section-icon { background: #fff0f0; }
-    .section-a-header .section-title { color: #ff3b30; }
-
-    .section-b-header .section-icon { background: #f0f7ff; }
-    .section-b-header .section-title { color: #0071e3; }
-
-    .section-c-header .section-icon { background: #f5f5f7; }
-    .section-c-header .section-title { color: #86868b; }
-
-    /* ------------------------------------------------------------------ */
-    /* Document cards                                                      */
-    /* ------------------------------------------------------------------ */
-    .cards-wrapper {
-      padding: 0 24px 16px;
-      background-color: #ffffff;
-    }
-
-    .card {
-      background-color: #ffffff;
-      border-radius: 14px;
-      border: 1px solid #e5e5ea;
-      margin-bottom: 20px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
-    }
-
-    .card:last-child { margin-bottom: 0; }
-
-    .card-a { border-left: 4px solid #ff3b30; }
-    .card-b { border-left: 4px solid #0071e3; }
-    .card-c { border-left: 4px solid #d2d2d7; }
-
-    .card-header {
-      padding: 20px 24px 16px;
-      border-bottom: 1px solid #f5f5f7;
-    }
-
-    .card-meta {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-
-    .badge-prorule { background: #fff0f0; color: #ff3b30; }
-    .badge-rule    { background: #f0f7ff; color: #0071e3; }
-    .badge-notice  { background: #e5f6ed; color: #1e9d56; }
-    .badge-other   { background: #f5f5f7; color: #515154; }
-    .badge-warning { background: #fff8e5; color: #b47800; }
-
-    .card-agency {
-      font-size: 13px;
-      color: #86868b;
-      font-weight: 500;
-    }
-
-    .card-title {
-      font-size: 17px;
-      font-weight: 600;
-      color: #1d1d1f;
-      line-height: 1.3;
-      letter-spacing: -0.015em;
-    }
-
-    .deadline-banner {
-      background: #fff9f9;
-      border-top: 1px solid #ffeeee;
-      border-bottom: 1px solid #ffeeee;
-      padding: 12px 24px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .deadline-label {
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
-      color: #ff3b30;
-    }
-
-    .deadline-date {
-      font-size: 13px;
-      font-weight: 600;
-      color: #d70015;
-    }
-
-    .effective-strip {
-      background: #f8fbff;
-      border-top: 1px solid #eef5ff;
-      border-bottom: 1px solid #eef5ff;
-      padding: 10px 24px;
-      font-size: 13px;
-      color: #0071e3;
-      font-weight: 500;
-    }
-
-    .card-body {
-      padding: 20px 24px;
-    }
-
-    .field-label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: #86868b;
-      margin-bottom: 6px;
-    }
-
-    .field-value {
-      font-size: 15px;
-      color: #333336;
-      margin-bottom: 20px;
-      line-height: 1.5;
-    }
-
-    .field-value:last-child { margin-bottom: 0; }
-
-    .bullet-list {
-      list-style: none;
-      padding: 0;
-      margin: 0 0 20px;
-    }
-
-    .bullet-list li {
-      font-size: 14px;
-      color: #333336;
-      padding: 4px 0 6px 18px;
-      position: relative;
-      line-height: 1.5;
-    }
-
-    .bullet-list li::before {
-      content: '•';
-      position: absolute;
-      left: 0;
-      font-size: 18px;
-      top: 0px;
-    }
-
-    .bullet-list-a li::before { color: #ff3b30; }
-    .bullet-list-b li::before { color: #0071e3; }
-    .bullet-list-c li::before { color: #86868b; }
-
-    .talking-points-list li::before {
-      content: '"';
-      font-size: 18px;
-      top: 2px;
-      font-weight: 600;
-      color: #86868b;
-    }
-
-    .card-footer {
-      padding: 16px 24px;
-      border-top: 1px solid #f5f5f7;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      background-color: #fbfbfd;
-    }
-
-    .card-link {
-      display: inline-flex;
-      align-items: center;
-      font-size: 13px;
-      font-weight: 500;
-      text-decoration: none;
-      padding: 8px 16px;
-      border-radius: 8px;
-      transition: all 0.2s;
-    }
-
-    .card-link-primary {
-      background: #eef5ff;
-      color: #0071e3;
-    }
-
-    .card-link-comment {
-      background: #fff0f0;
-      color: #ff3b30;
-    }
-
-    .card-link-b-comment {
-      background: #f5f5f7;
-      color: #515154;
-    }
-
-    .entry-disclaimer {
-      font-size: 12px;
-      color: #86868b;
-      padding: 12px 24px;
-      border-top: 1px solid #f5f5f7;
-      font-style: italic;
-      background-color: #fbfbfd;
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Section divider                                                     */
-    /* ------------------------------------------------------------------ */
-    .section-divider {
-      height: 1px;
-      background-color: #e5e5ea;
-      margin: 16px 32px 0;
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Footer                                                              */
-    /* ------------------------------------------------------------------ */
-    .footer {
-      padding: 32px 40px;
-      border-top: 1px solid #e5e5ea;
-      background: #f5f5f7;
-      text-align: center;
-    }
-
-    .footer-org {
-      font-size: 14px;
-      font-weight: 600;
-      color: #1d1d1f;
-      margin-bottom: 4px;
-    }
-
-    .footer-tagline {
-      font-size: 13px;
-      color: #86868b;
-      margin-bottom: 24px;
-    }
-
-    .footer-disclaimer {
-      font-size: 12px;
-      color: #86868b;
-      line-height: 1.5;
-      padding: 16px;
-      background: #ffffff;
-      border-radius: 12px;
-      border: 1px solid #e5e5ea;
-      margin-bottom: 24px;
-      text-align: left;
-    }
-
-    .footer-links {
-      font-size: 12px;
-      color: #86868b;
-    }
-
-    .footer-links a {
-      color: #0071e3;
-      text-decoration: none;
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Responsive                                                          */
-    /* ------------------------------------------------------------------ */
-    @media only screen and (max-width: 600px) {
-      .header { padding: 32px 24px 24px; }
-      .header-title { font-size: 24px; }
-      .cards-wrapper { padding: 0 16px 16px; }
-      .card-header, .card-body, .card-footer { padding-left: 20px; padding-right: 20px; }
-      .section-header { padding: 24px 24px 16px; }
-      .summary-bar { flex-direction: row; }
-      .summary-chip { padding: 16px 12px; }
-      .summary-chip-count { font-size: 20px; }
-      .footer { padding: 32px 24px; }
+    @media only screen and (max-width: 620px) {
+      table.wrap > tbody > tr > td { padding-left: 0 !important; padding-right: 0 !important; }
+      table.container { width: 100% !important; border-radius: 0 !important; border-left: none !important; border-right: none !important; }
+      td.mob-pad { padding-left: 20px !important; padding-right: 20px !important; }
+      td.card-pad { padding: 20px !important; }
+      p.mob-title { font-size: 17px !important; }
+      td.stat-cell { padding: 14px 8px !important; }
+      p.stat-num { font-size: 22px !important; }
+      td.btn-primary, td.btn-secondary { display: block !important; width: 100% !important; text-align: center !important; margin-bottom: 8px !important; }
+      td.btn-gap { display: none !important; }
     }
   </style>
 </head>
-<body>
-<div class="email-wrapper">
-<table class="email-container" width="100%" cellpadding="0" cellspacing="0" role="presentation">
 
-  <!-- ===== HEADER ===== -->
+<body style="margin: 0; padding: 0; background-color: #EDF0F5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+
+{# ── Outer wrapper ───────────────────────────────────────────────────────── #}
+<table class="wrap" width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"
+  style="background-color: #EDF0F5; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
   <tr>
-    <td>
-      <div class="header">
-        <div class="header-eyebrow">Open Paws · Federal Register Sentinel</div>
-        <div class="header-title">Daily Regulatory Digest</div>
-        <div class="header-subtitle">Animal-relevant federal activity for your review</div>
-        <div class="header-date-chip">{{ digest_date.strftime('%A, %B %d, %Y') }}</div>
-      </div>
+    <td align="center" style="padding: 40px 16px 56px; background-color: #EDF0F5;">
+
+{# ── 600px container ─────────────────────────────────────────────────────── #}
+<table class="container" width="600" cellpadding="0" cellspacing="0" border="0" role="presentation"
+  style="max-width: 600px; width: 100%; background-color: #FFFFFF;
+         border: 1px solid #D8DCE5; border-radius: 12px; overflow: hidden;">
+
+  {# ── Brand bar ── #}
+  <tr>
+    <td style="height: 5px; background-color: #1B3A5C; font-size: 1px; line-height: 1px; mso-line-height-rule: exactly;">&nbsp;</td>
+  </tr>
+
+  {# ── Header ── #}
+  <tr>
+    <td align="center" class="mob-pad"
+      style="padding: 44px 48px 40px; background-color: #FFFFFF; border-bottom: 1px solid #EAECF0;">
+      {# WIRE-UP: replace src with hosted ALDF logo URL #}
+      <img src="https://placehold.co/128x32/FFFFFF/1B3A5C?text=ALDF"
+        alt="Animal Legal Defense Fund" width="128" height="32"
+        style="display: block; margin: 0 auto 28px; border: 0;" />
+      <p style="margin: 0 0 6px;
+        font-size: 28px; font-weight: 700; letter-spacing: -0.02em;
+        color: #0D1117; line-height: 1.1;">
+        {# VARIABLE: digest_date formatted e.g. "June 4, 2026" #}
+        {{ digest_date | datefmt }}
+      </p>
+      <p style="margin: 0; font-size: 14px; color: #6B7280; line-height: 1.5;">
+        Federal animal law activity for your review
+      </p>
     </td>
   </tr>
 
-  <!-- ===== SUMMARY BAR ===== -->
+  {# ── Stat strip ── #}
   <tr>
-    <td>
-      <div class="summary-bar">
-        <div class="summary-chip chip-a">
-          <div class="summary-chip-count">{{ section_a | length }}</div>
-          <div class="summary-chip-label">Action Required</div>
-        </div>
-        <div class="summary-chip chip-b">
-          <div class="summary-chip-count">{{ section_b | length }}</div>
-          <div class="summary-chip-label">Watchdog</div>
-        </div>
-        <div class="summary-chip chip-c">
-          <div class="summary-chip-count">{{ section_c | length }}</div>
-          <div class="summary-chip-label">Potential Matches</div>
-        </div>
-      </div>
+    <td style="background-color: #FAFBFC; border-bottom: 1px solid #EAECF0;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+        <tr>
+          <td class="stat-cell" align="center"
+            style="padding: 20px 16px; border-right: 1px solid #EAECF0; width: 33%;">
+            {# VARIABLE: section_a count #}
+            <p class="stat-num" style="margin: 0 0 3px;
+              font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: #B45309; line-height: 1;">
+              {{ section_a | length }}
+            </p>
+            <p style="margin: 0; font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+              text-transform: uppercase; color: #9CA3AF; line-height: 1.2;">
+              Action Required
+            </p>
+          </td>
+          <td class="stat-cell" align="center"
+            style="padding: 20px 16px; border-right: 1px solid #EAECF0; width: 33%;">
+            {# VARIABLE: section_b count #}
+            <p class="stat-num" style="margin: 0 0 3px;
+              font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: #1B3A5C; line-height: 1;">
+              {{ section_b | length }}
+            </p>
+            <p style="margin: 0; font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+              text-transform: uppercase; color: #9CA3AF; line-height: 1.2;">
+              Watchdog
+            </p>
+          </td>
+          <td class="stat-cell" align="center"
+            style="padding: 20px 16px; width: 33%;">
+            {# VARIABLE: section_c count #}
+            <p class="stat-num" style="margin: 0 0 3px;
+              font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: #6B7280; line-height: 1;">
+              {{ section_c | length }}
+            </p>
+            <p style="margin: 0; font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+              text-transform: uppercase; color: #9CA3AF; line-height: 1.2;">
+              Potential
+            </p>
+          </td>
+        </tr>
+      </table>
     </td>
   </tr>
 
-  <!-- ================================================================== -->
-  <!-- SECTION A: HIGH PRIORITY                                            -->
-  <!-- ================================================================== -->
+  {# ═══════════════════════════════════════════════════════════════════════
+     SECTION A — ACTION REQUIRED
+     Amber accent · Proposed rules with open comment windows
+     ═══════════════════════════════════════════════════════════════════════ #}
+  {% if has_a %}
+
+  {# Section A label #}
+  <tr>
+    <td class="mob-pad" style="padding: 36px 40px 20px; background-color: #FFFFFF;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+        <tr>
+          {# Letter badge #}
+          <td width="28" valign="middle" style="width: 28px;">
+            <div style="display: inline-block; width: 22px; height: 22px; line-height: 22px;
+              background-color: #F59E0B; border-radius: 5px; text-align: center;
+              font-size: 11px; font-weight: 800; color: #FFFFFF; letter-spacing: 0;">A</div>
+          </td>
+          {# Section name #}
+          <td valign="middle" style="padding-left: 8px;">
+            <p style="margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.09em;
+              text-transform: uppercase; color: #B45309; line-height: 1;">
+              Action Required
+            </p>
+          </td>
+          {# Right rule #}
+          <td valign="middle" style="padding-left: 14px;">
+            <div style="height: 1px; background-color: #FDE68A; line-height: 1px; font-size: 1px;">&nbsp;</div>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  {# Cards #}
+  <tr>
+    <td class="mob-pad" style="padding: 0 40px 32px; background-color: #FFFFFF;">
+      {% for entry in section_a %}
+      {# ── Card ──────────────────────────────────────────────────────────── #}
+      {# VARIABLE: entry.* — see DigestEntry dataclass in digest_builder.py #}
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"
+        style="background-color: #FFFFFF; border: 1px solid #E5E7EB;
+               border-left: 4px solid #F59E0B; border-radius: 8px;
+               border-collapse: separate; border-spacing: 0;
+               box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+               margin-bottom: {% if not loop.last %}20px{% else %}0{% endif %};">
+        <tr>
+          <td class="card-pad" style="padding: 24px 24px 0;">
+            {% if entry.is_public_inspection %}
+            <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin-bottom: 14px;">
+              <tr>
+                <td bgcolor="#EFF6FF" style="background-color: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 4px; padding: 4px 10px;">
+                  <p style="margin: 0; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #1D4ED8; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;">
+                    Public Inspection Draft &#8212; dates may be preliminary
+                  </p>
+                </td>
+              </tr>
+            </table>
+            {% endif %}
+            {# Agency — VARIABLE: entry.agency_names #}
+            <p style="margin: 0 0 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+              text-transform: uppercase; color: #9CA3AF; line-height: 1;">
+              {{ entry.agency_names | join(' &nbsp;·&nbsp; ') }}
+            </p>
+            {# Regulation category + publication date + summarization tier #}
+            <p style="margin: 0 0 12px; font-size: 11px; color: #9CA3AF; line-height: 1.4;">
+              {% if entry.regulation_category %}<span style="display: inline-block; background-color: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 600; color: #1D4ED8; letter-spacing: 0.04em; margin-right: 8px;">{{ entry.regulation_category }}</span>{% endif %}Published {{ entry.publication_date | datefmt }}{% if entry.summarization_tier %} &nbsp;&middot;&nbsp; {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
+            </p>
+            {# Title — VARIABLE: entry.title #}
+            <p class="mob-title" style="margin: 0 0 14px; font-size: 18px; font-weight: 700;
+              letter-spacing: -0.01em; color: #0D1117; line-height: 1.3;">
+              {{ entry.title }}
+            </p>
+            {# Summary — VARIABLE: entry.plain_language_summary #}
+            <p style="margin: 0; font-size: 14px; color: #4B5563; line-height: 1.7;">
+              {{ entry.plain_language_summary }}
+            </p>
+            {# Advocacy relevance — VARIABLE: entry.advocacy_relevance #}
+            {% if entry.advocacy_relevance %}
+            <p style="margin: 12px 0 0; font-size: 13px; color: #6B7280; line-height: 1.6; font-style: italic;">
+              {{ entry.advocacy_relevance }}
+            </p>
+            {% endif %}
+          </td>
+        </tr>
+
+        {# Deadline strip — VARIABLE: entry.comments_close_on, entry.comments_days_left #}
+        {% if entry.comments_close_on %}
+        <tr>
+          <td style="padding: 16px 24px;">
+            <table cellpadding="0" cellspacing="0" border="0" role="presentation">
+              <tr>
+                {% if entry.comments_days_left is not none and entry.comments_days_left <= 6 %}
+                <td style="background-color: #FEF2F2; border: 1px solid #FECACA; border-radius: 6px; padding: 10px 16px;">
+                  <p style="margin: 0; font-size: 12px; font-weight: 700; color: #991B1B; line-height: 1;">
+                    &#9719;&nbsp; Comment by {{ entry.comments_close_on | datefmt }} &nbsp;&middot;&nbsp; {{ entry.comments_days_left }} day{% if entry.comments_days_left != 1 %}s{% endif %} left
+                  </p>
+                </td>
+                {% elif entry.comments_days_left is not none and entry.comments_days_left <= 14 %}
+                <td bgcolor="#FFFBEB" style="background-color: #FFFBEB; border: 1px solid #FDE68A; border-radius: 6px; padding: 10px 16px;">
+                  <p style="margin: 0; font-size: 12px; font-weight: 600; color: #B45309; line-height: 1;">
+                    &#9719;&nbsp; Comment by {{ entry.comments_close_on | datefmt }} &nbsp;&middot;&nbsp; {{ entry.comments_days_left }} days left
+                  </p>
+                </td>
+                {% else %}
+                <td bgcolor="#FFFBEB" style="background-color: #FFFBEB; border: 1px solid #FDE68A; border-radius: 6px; padding: 10px 16px;">
+                  <p style="margin: 0; font-size: 12px; font-weight: 600; color: #92400E; line-height: 1;">
+                    &#9719;&nbsp; Comment by {{ entry.comments_close_on | datefmt }}{% if entry.comments_days_left is not none %} &nbsp;&middot;&nbsp; {{ entry.comments_days_left }} days left{% endif %}
+                  </p>
+                </td>
+                {% endif %}
+              </tr>
+            </table>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td style="height: 16px;">&nbsp;</td></tr>
+        {% endif %}
+
+        {# Effective date — VARIABLE: entry.effective_on #}
+        {% if entry.effective_on %}
+        <tr>
+          <td style="padding: 0 24px 12px;">
+            <p style="margin: 0; font-size: 12px; color: #6B7280; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;">
+              Effective {{ entry.effective_on | datefmt }}
+            </p>
+          </td>
+        </tr>
+        {% endif %}
+
+        {# Buttons — VARIABLE: entry.source_url, entry.comment_portal_url #}
+        <tr>
+          <td style="padding: 0 24px 20px;">
+            <table cellpadding="0" cellspacing="0" border="0" role="presentation">
+              <tr>
+                <td class="btn-primary" bgcolor="#1B3A5C"
+                  style="background-color: #1B3A5C; border-radius: 100px;">
+                  <a href="{{ entry.source_url }}" target="_blank"
+                    style="display: inline-block; padding: 10px 22px;
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                      font-size: 13px; font-weight: 600; color: #FFFFFF; text-decoration: none; white-space: nowrap;">
+                    View Notice
+                  </a>
+                </td>
+                {% if entry.comment_portal_url %}
+                <td class="btn-gap" width="10" style="width: 10px;">&nbsp;</td>
+                <td class="btn-secondary"
+                  style="border-radius: 100px; border: 1.5px solid #F59E0B; background-color: #FFFFFF;">
+                  <a href="{{ entry.comment_portal_url }}" target="_blank"
+                    style="display: inline-block; padding: 9px 20px;
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                      font-size: 13px; font-weight: 600; color: #B45309; text-decoration: none; white-space: nowrap;">
+                    Submit Comment
+                  </a>
+                </td>
+                {% endif %}
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        {# Suggested actions — VARIABLE: entry.suggested_actions #}
+        {% if entry.suggested_actions %}
+        <tr>
+          <td style="padding: 0 24px 20px; border-top: 1px solid #F3F4F6;">
+            <p style="margin: 16px 0 8px; font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #9CA3AF; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;">Suggested Actions</p>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+              {% for action in entry.suggested_actions %}
+              <tr>
+                <td valign="top" width="24"
+                  style="font-size: 12px; font-weight: 700; color: #D1D5DB; padding-right: 10px;
+                    line-height: 1.6; white-space: nowrap; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                    padding-bottom: 6px;">
+                  {{ loop.index }}.
+                </td>
+                <td style="font-size: 13px; color: #374151; line-height: 1.6;
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                  padding-bottom: 6px;">
+                  {{ action }}
+                </td>
+              </tr>
+              {% endfor %}
+            </table>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td style="height: 4px;">&nbsp;</td></tr>
+        {% endif %}
+        {% if entry.suggested_talking_points %}
+        <tr>
+          <td style="padding: 0 24px 24px; border-top: 1px solid #F3F4F6;">
+            <p style="margin: 16px 0 8px; font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #9CA3AF; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;">Talking Points</p>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+              {% for point in entry.suggested_talking_points %}
+              <tr>
+                <td valign="top" width="24"
+                  style="font-size: 12px; font-weight: 700; color: #D1D5DB; padding-right: 10px;
+                    line-height: 1.6; white-space: nowrap; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                    padding-bottom: 6px;">
+                  {{ loop.index }}.
+                </td>
+                <td style="font-size: 13px; color: #374151; line-height: 1.6;
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                  padding-bottom: 6px;">
+                  {{ point }}
+                </td>
+              </tr>
+              {% endfor %}
+            </table>
+          </td>
+        </tr>
+        {% endif %}
+
+      </table>
+      {# ── End card ── #}
+      {% endfor %}
+    </td>
+  </tr>
+  {% endif %}
+
+  {# ═══════════════════════════════════════════════════════════════════════
+     SECTION B — WATCHDOG MONITORING
+     Navy accent · Final rules and notices
+     ═══════════════════════════════════════════════════════════════════════ #}
+  {% if has_b %}
+
+  {# Divider between sections #}
   {% if has_a %}
   <tr>
-    <td>
-      <div class="section-header section-a-header">
-        <div class="section-icon">🔴</div>
-        <div>
-          <div class="section-title">Section A — Action Required</div>
-          <div class="section-subtitle">Proposed rules with open public comment windows · Attorney review needed</div>
-        </div>
-      </div>
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <div class="cards-wrapper">
-        {% for entry in section_a %}
-        <div class="card card-a">
-
-          <!-- Card header -->
-          <div class="card-header">
-            <div class="card-meta">
-              <span class="badge badge-prorule">Proposed Rule</span>
-              {% if entry.agency_names %}
-              <span class="card-agency">{{ entry.agency_names | join(' · ') }}</span>
-              {% endif %}
-            </div>
-            <div class="card-title">{{ entry.title }}</div>
-          </div>
-
-          <!-- Deadline banner -->
-          {% if entry.comments_close_on %}
-          <div class="deadline-banner">
-            <span class="deadline-label">⚠ Comment Deadline</span>
-            <span class="deadline-date">{{ entry.comments_close_on.strftime('%B %d, %Y') }}</span>
-          </div>
-          {% endif %}
-
-          <!-- Card body -->
-          <div class="card-body">
-            <div class="field-label">Summary</div>
-            <div class="field-value">{{ entry.plain_language_summary }}</div>
-
-            <div class="field-label">Advocacy Relevance</div>
-            <div class="field-value">{{ entry.advocacy_relevance }}</div>
-
-            {% if entry.suggested_actions %}
-            <div class="field-label">Suggested Actions</div>
-            <ul class="bullet-list bullet-list-a">
-              {% for action in entry.suggested_actions %}
-              <li>{{ action }}</li>
-              {% endfor %}
-            </ul>
-            {% endif %}
-
-            {% if entry.suggested_talking_points %}
-            <div class="field-label">Talking Points</div>
-            <ul class="bullet-list bullet-list-a talking-points-list">
-              {% for point in entry.suggested_talking_points %}
-              <li>{{ point }}</li>
-              {% endfor %}
-            </ul>
-            {% endif %}
-          </div>
-
-          <!-- Card footer links -->
-          <div class="card-footer">
-            <a href="{{ entry.source_url }}" class="card-link card-link-primary" target="_blank">
-              ↗ View Federal Register Notice
-            </a>
-            {% if entry.comment_portal_url %}
-            <a href="{{ entry.comment_portal_url }}" class="card-link card-link-comment" target="_blank">
-              ✍ Submit Public Comment
-            </a>
-            {% endif %}
-          </div>
-
-          <!-- Per-entry disclaimer -->
-          <div class="entry-disclaimer">{{ entry.disclaimer }}</div>
-        </div>
-        {% endfor %}
-      </div>
-    </td>
+    <td style="height: 1px; background-color: #EAECF0; font-size: 1px; line-height: 1px;">&nbsp;</td>
   </tr>
   {% endif %}
 
-  <!-- ================================================================== -->
-  <!-- SECTION B: WATCHDOG MONITORING                                      -->
-  <!-- ================================================================== -->
-  {% if has_b %}
-  {% if has_a %}<tr><td><div class="section-divider"></div></td></tr>{% endif %}
+  {# Section B label #}
   <tr>
-    <td>
-      <div class="section-header section-b-header">
-        <div class="section-icon">🔵</div>
-        <div>
-          <div class="section-title">Section B — Watchdog Monitoring</div>
-          <div class="section-subtitle">Final rules and informational notices · Litigation planning</div>
-        </div>
-      </div>
+    <td class="mob-pad" style="padding: 36px 40px 20px; background-color: #FFFFFF;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+        <tr>
+          <td width="28" valign="middle" style="width: 28px;">
+            <div style="display: inline-block; width: 22px; height: 22px; line-height: 22px;
+              background-color: #1B3A5C; border-radius: 5px; text-align: center;
+              font-size: 11px; font-weight: 800; color: #FFFFFF;">B</div>
+          </td>
+          <td valign="middle" style="padding-left: 8px;">
+            <p style="margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.09em;
+              text-transform: uppercase; color: #1B3A5C; line-height: 1;">
+              Watchdog Monitoring
+            </p>
+          </td>
+          <td valign="middle" style="padding-left: 14px;">
+            <div style="height: 1px; background-color: #DBEAFE; font-size: 1px; line-height: 1px;">&nbsp;</div>
+          </td>
+        </tr>
+      </table>
     </td>
   </tr>
+
+  {# Cards #}
   <tr>
-    <td>
-      <div class="cards-wrapper">
-        {% for entry in section_b %}
-        <div class="card card-b">
-
-          <!-- Card header -->
-          <div class="card-header">
-            <div class="card-meta">
-              {% if entry.regulation_category == 'Final Rule' %}
-              <span class="badge badge-rule">Final Rule</span>
-              {% elif entry.regulation_category == 'Notice' %}
-              <span class="badge badge-notice">Notice</span>
-              {% else %}
-              <span class="badge badge-other">{{ entry.regulation_category or 'Document' }}</span>
-              {% endif %}
-              {% if entry.agency_names %}
-              <span class="card-agency">{{ entry.agency_names | join(' · ') }}</span>
-              {% endif %}
-            </div>
-            <div class="card-title">{{ entry.title }}</div>
-          </div>
-
-          <!-- Effective date strip (if present) -->
-          {% if entry.effective_on %}
-          <div class="effective-strip">
-            Effective: {{ entry.effective_on.strftime('%B %d, %Y') }}
-          </div>
-          {% endif %}
-
-          <!-- Card body -->
-          <div class="card-body">
-            <div class="field-label">Summary</div>
-            <div class="field-value">{{ entry.plain_language_summary }}</div>
-
-            <div class="field-label">Advocacy Relevance</div>
-            <div class="field-value">{{ entry.advocacy_relevance }}</div>
-
-            {% if entry.suggested_actions %}
-            <div class="field-label">Suggested Actions</div>
-            <ul class="bullet-list bullet-list-b">
-              {% for action in entry.suggested_actions %}
-              <li>{{ action }}</li>
-              {% endfor %}
-            </ul>
+    <td class="mob-pad" style="padding: 0 40px 32px; background-color: #FFFFFF;">
+      {% for entry in section_b %}
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"
+        style="background-color: #FFFFFF; border: 1px solid #E5E7EB;
+               border-left: 4px solid #1B3A5C; border-radius: 8px;
+               border-collapse: separate; border-spacing: 0;
+               box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+               margin-bottom: {% if not loop.last %}20px{% else %}0{% endif %};">
+        <tr>
+          <td class="card-pad" style="padding: 24px 24px 0;">
+            {% if entry.is_public_inspection %}
+            <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin-bottom: 14px;">
+              <tr>
+                <td bgcolor="#EFF6FF" style="background-color: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 4px; padding: 4px 10px;">
+                  <p style="margin: 0; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #1D4ED8; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;">
+                    Public Inspection Draft &#8212; dates may be preliminary
+                  </p>
+                </td>
+              </tr>
+            </table>
             {% endif %}
-
-            {% if entry.suggested_talking_points %}
-            <div class="field-label">Talking Points</div>
-            <ul class="bullet-list bullet-list-b talking-points-list">
-              {% for point in entry.suggested_talking_points %}
-              <li>{{ point }}</li>
-              {% endfor %}
-            </ul>
-            {% endif %}
-          </div>
-
-          <!-- Card footer links -->
-          <div class="card-footer">
-            <a href="{{ entry.source_url }}" class="card-link card-link-primary" target="_blank">
-              ↗ View Federal Register Notice
-            </a>
-            {% if entry.comment_portal_url %}
-            <a href="{{ entry.comment_portal_url }}" class="card-link card-link-b-comment" target="_blank">
-              📋 View Docket
-            </a>
-            {% endif %}
-          </div>
-
-          <!-- Per-entry disclaimer -->
-          <div class="entry-disclaimer">{{ entry.disclaimer }}</div>
-        </div>
-        {% endfor %}
-      </div>
-    </td>
-  </tr>
-  {% endif %}
-
-  <!-- ================================================================== -->
-  <!-- SECTION C: POTENTIAL MATCHES                                        -->
-  <!-- ================================================================== -->
-  {% if has_c %}
-  {% if has_a or has_b %}<tr><td><div class="section-divider"></div></td></tr>{% endif %}
-  <tr>
-    <td>
-      <div class="section-header section-c-header">
-        <div class="section-icon">⚪</div>
-        <div>
-          <div class="section-title">Section C — Potential Matches</div>
-          <div class="section-subtitle">Borderline relevance or unconfirmed classification · Manual review recommended</div>
-        </div>
-      </div>
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <div class="cards-wrapper">
-        {% for entry in section_c %}
-        <div class="card card-c">
-
-          <!-- Card header -->
-          <div class="card-header">
-            <div class="card-meta">
-              {% if entry.is_needs_confirmation %}
-              <span class="badge badge-warning">⚠ Unverified Relevance</span>
-              {% endif %}
-              {% if entry.regulation_category %}
-              <span class="badge badge-other">{{ entry.regulation_category }}</span>
-              {% endif %}
-              {% if entry.agency_names %}
-              <span class="card-agency">{{ entry.agency_names | join(' · ') }}</span>
-              {% endif %}
-            </div>
-            <div class="card-title">{{ entry.title }}</div>
-          </div>
-
-          <!-- Card body -->
-          <div class="card-body">
-            <div class="field-label">Summary</div>
-            <div class="field-value">{{ entry.plain_language_summary }}</div>
-
+            {# Agency — VARIABLE: entry.agency_names #}
+            <p style="margin: 0 0 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+              text-transform: uppercase; color: #9CA3AF; line-height: 1;">
+              {{ entry.agency_names | join(' &nbsp;·&nbsp; ') }}
+            </p>
+            {# Regulation category + publication date + summarization tier #}
+            <p style="margin: 0 0 12px; font-size: 11px; color: #9CA3AF; line-height: 1.4;">
+              {% if entry.regulation_category %}<span style="display: inline-block; background-color: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 600; color: #1D4ED8; letter-spacing: 0.04em; margin-right: 8px;">{{ entry.regulation_category }}</span>{% endif %}Published {{ entry.publication_date | datefmt }}{% if entry.summarization_tier %} &nbsp;&middot;&nbsp; {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
+            </p>
+            {# Title — VARIABLE: entry.title #}
+            <p class="mob-title" style="margin: 0 0 14px; font-size: 18px; font-weight: 700;
+              letter-spacing: -0.01em; color: #0D1117; line-height: 1.3;">
+              {{ entry.title }}
+            </p>
+            {# Summary — VARIABLE: entry.plain_language_summary #}
+            <p style="margin: 0; font-size: 14px; color: #4B5563; line-height: 1.7;">
+              {{ entry.plain_language_summary }}
+            </p>
+            {# Advocacy relevance — VARIABLE: entry.advocacy_relevance #}
             {% if entry.advocacy_relevance %}
-            <div class="field-label">Potential Advocacy Relevance</div>
-            <div class="field-value">{{ entry.advocacy_relevance }}</div>
+            <p style="margin: 12px 0 0; font-size: 13px; color: #6B7280; line-height: 1.6; font-style: italic;">
+              {{ entry.advocacy_relevance }}
+            </p>
             {% endif %}
-
-            {% if entry.suggested_actions %}
-            <div class="field-label">Suggested Actions</div>
-            <ul class="bullet-list bullet-list-c">
+          </td>
+        </tr>
+        {# Deadline strip — VARIABLE: entry.comments_close_on, entry.comments_days_left #}
+        {% if entry.comments_close_on %}
+        <tr>
+          <td style="padding: 16px 24px 0;">
+            <table cellpadding="0" cellspacing="0" border="0" role="presentation">
+              <tr>
+                {% if entry.comments_days_left is not none and entry.comments_days_left <= 6 %}
+                <td style="background-color: #FEF2F2; border: 1px solid #FECACA; border-radius: 6px; padding: 10px 16px;">
+                  <p style="margin: 0; font-size: 12px; font-weight: 700; color: #991B1B; line-height: 1;">
+                    &#9719;&nbsp; Comment by {{ entry.comments_close_on | datefmt }} &nbsp;&middot;&nbsp; {{ entry.comments_days_left }} day{% if entry.comments_days_left != 1 %}s{% endif %} left
+                  </p>
+                </td>
+                {% elif entry.comments_days_left is not none and entry.comments_days_left <= 14 %}
+                <td bgcolor="#FFFBEB" style="background-color: #FFFBEB; border: 1px solid #FDE68A; border-radius: 6px; padding: 10px 16px;">
+                  <p style="margin: 0; font-size: 12px; font-weight: 600; color: #B45309; line-height: 1;">
+                    &#9719;&nbsp; Comment by {{ entry.comments_close_on | datefmt }} &nbsp;&middot;&nbsp; {{ entry.comments_days_left }} days left
+                  </p>
+                </td>
+                {% else %}
+                <td bgcolor="#FFFBEB" style="background-color: #FFFBEB; border: 1px solid #FDE68A; border-radius: 6px; padding: 10px 16px;">
+                  <p style="margin: 0; font-size: 12px; font-weight: 600; color: #92400E; line-height: 1;">
+                    &#9719;&nbsp; Comment by {{ entry.comments_close_on | datefmt }}{% if entry.comments_days_left is not none %} &nbsp;&middot;&nbsp; {{ entry.comments_days_left }} days left{% endif %}
+                  </p>
+                </td>
+                {% endif %}
+              </tr>
+            </table>
+          </td>
+        </tr>
+        {% endif %}
+        {% if entry.effective_on %}
+        <tr>
+          <td style="padding: 16px 24px 0;">
+            <p style="margin: 0; font-size: 12px; color: #6B7280; line-height: 1;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;">
+              Effective {{ entry.effective_on | datefmt }}
+            </p>
+          </td>
+        </tr>
+        {% endif %}
+        {# Button — VARIABLE: entry.source_url #}
+        <tr>
+          <td style="padding: 16px 24px 24px;">
+            <table cellpadding="0" cellspacing="0" border="0" role="presentation">
+              <tr>
+                <td class="btn-primary" bgcolor="#1B3A5C"
+                  style="background-color: #1B3A5C; border-radius: 100px;">
+                  <a href="{{ entry.source_url }}" target="_blank"
+                    style="display: inline-block; padding: 10px 22px;
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                      font-size: 13px; font-weight: 600; color: #FFFFFF; text-decoration: none; white-space: nowrap;">
+                    View Notice
+                  </a>
+                </td>
+                {% if entry.comment_portal_url %}
+                <td class="btn-gap" width="10" style="width: 10px;">&nbsp;</td>
+                <td class="btn-secondary"
+                  style="border-radius: 100px; border: 1.5px solid #1B3A5C; background-color: #FFFFFF;">
+                  <a href="{{ entry.comment_portal_url }}" target="_blank"
+                    style="display: inline-block; padding: 9px 20px;
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                      font-size: 13px; font-weight: 600; color: #1B3A5C; text-decoration: none; white-space: nowrap;">
+                    Submit Comment
+                  </a>
+                </td>
+                {% endif %}
+              </tr>
+            </table>
+          </td>
+        </tr>
+        {% if entry.suggested_actions %}
+        <tr>
+          <td style="padding: 0 24px 20px; border-top: 1px solid #F3F4F6;">
+            <p style="margin: 16px 0 8px; font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #9CA3AF; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;">Suggested Actions</p>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
               {% for action in entry.suggested_actions %}
-              <li>{{ action }}</li>
+              <tr>
+                <td valign="top" width="24"
+                  style="font-size: 12px; font-weight: 700; color: #D1D5DB; padding-right: 10px;
+                    line-height: 1.6; white-space: nowrap; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                    padding-bottom: 6px;">
+                  {{ loop.index }}.
+                </td>
+                <td style="font-size: 13px; color: #374151; line-height: 1.6;
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                  padding-bottom: 6px;">
+                  {{ action }}
+                </td>
+              </tr>
               {% endfor %}
-            </ul>
-            {% endif %}
-          </div>
-
-          <!-- Card footer links -->
-          <div class="card-footer">
-            <a href="{{ entry.source_url }}" class="card-link card-link-primary" target="_blank">
-              ↗ View Federal Register Notice
-            </a>
-          </div>
-
-          <!-- Per-entry disclaimer -->
-          <div class="entry-disclaimer">{{ entry.disclaimer }}</div>
-        </div>
-        {% endfor %}
-      </div>
+            </table>
+          </td>
+        </tr>
+        {% endif %}
+        {% if entry.suggested_talking_points %}
+        <tr>
+          <td style="padding: 0 24px 24px; border-top: 1px solid #F3F4F6;">
+            <p style="margin: 16px 0 8px; font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #9CA3AF; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;">Talking Points</p>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+              {% for point in entry.suggested_talking_points %}
+              <tr>
+                <td valign="top" width="24"
+                  style="font-size: 12px; font-weight: 700; color: #D1D5DB; padding-right: 10px;
+                    line-height: 1.6; white-space: nowrap; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                    padding-bottom: 6px;">
+                  {{ loop.index }}.
+                </td>
+                <td style="font-size: 13px; color: #374151; line-height: 1.6;
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                  padding-bottom: 6px;">
+                  {{ point }}
+                </td>
+              </tr>
+              {% endfor %}
+            </table>
+          </td>
+        </tr>
+        {% endif %}
+      </table>
+      {% endfor %}
     </td>
   </tr>
   {% endif %}
 
-  <!-- ===== FOOTER ===== -->
+  {# ═══════════════════════════════════════════════════════════════════════
+     SECTION C — POTENTIAL MATCHES
+     Gray accent · NEEDS_CONFIRMATION or expired proposed rules
+     ═══════════════════════════════════════════════════════════════════════ #}
+  {% if has_c %}
+
+  {% if has_a or has_b %}
   <tr>
-    <td>
-      <div class="footer">
-        <div class="footer-org">Open Paws · Animal Legal Defense Fund</div>
-        <div class="footer-tagline">Federal Register Sentinel — Automated regulatory monitoring for animal advocates</div>
+    <td style="height: 1px; background-color: #EAECF0; font-size: 1px; line-height: 1px;">&nbsp;</td>
+  </tr>
+  {% endif %}
 
-        <div class="footer-disclaimer">
-          <strong>Legal Disclaimer:</strong> This digest is generated automatically for informational purposes only.
-          All summaries are AI-generated and may not be complete or accurate. Nothing in this digest constitutes
-          legal advice or formal legal analysis. Always verify information against the official Federal Register
-          source before taking any action. ALDF attorneys and staff should independently review source documents
-          for any matter requiring professional legal judgment.
-        </div>
+  {# Section C label #}
+  <tr>
+    <td class="mob-pad" style="padding: 36px 40px 20px; background-color: #FFFFFF;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+        <tr>
+          <td width="28" valign="middle" style="width: 28px;">
+            <div style="display: inline-block; width: 22px; height: 22px; line-height: 22px;
+              background-color: #9CA3AF; border-radius: 5px; text-align: center;
+              font-size: 11px; font-weight: 800; color: #FFFFFF;">C</div>
+          </td>
+          <td valign="middle" style="padding-left: 8px;">
+            <p style="margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.09em;
+              text-transform: uppercase; color: #6B7280; line-height: 1;">
+              Potential Matches
+            </p>
+          </td>
+          <td valign="middle" style="padding-left: 14px;">
+            <div style="height: 1px; background-color: #E5E7EB; font-size: 1px; line-height: 1px;">&nbsp;</div>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
 
-        <div class="footer-links">
-          Digest generated {{ built_at.strftime('%Y-%m-%d %H:%M UTC') }} ·
-          <a href="https://www.federalregister.gov" target="_blank">Federal Register</a> ·
-          <a href="https://www.regulations.gov" target="_blank">Regulations.gov</a>
-          <br /><br />
-          You are receiving this because you are subscribed to the Open Paws Federal Register Sentinel.
-          To manage your subscription, visit your Open Paws account settings.
-        </div>
-      </div>
+  {# Cards #}
+  <tr>
+    <td class="mob-pad" style="padding: 0 40px 32px; background-color: #FFFFFF;">
+      {% for entry in section_c %}
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"
+        style="background-color: #FAFAFA; border: 1px solid #E5E7EB;
+               border-left: 4px solid #D1D5DB; border-radius: 8px;
+               border-collapse: separate; border-spacing: 0;
+               box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+               margin-bottom: {% if not loop.last %}20px{% else %}0{% endif %};">
+        <tr>
+          <td class="card-pad" style="padding: 22px 24px 0;">
+            {# Amber warning badge — VARIABLE: entry.is_needs_confirmation #}
+            {% if entry.is_needs_confirmation %}
+            <table cellpadding="0" cellspacing="0" border="0" role="presentation"
+              style="margin-bottom: 14px;">
+              <tr>
+                <td bgcolor="#FFF8E5" style="background-color: #FFF8E5; border: 1px solid #FDE68A;
+                  border-radius: 4px; padding: 4px 10px;">
+                  <p style="margin: 0; font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+                    text-transform: uppercase; color: #B45309; line-height: 1;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;">
+                    Unreviewed &#8212; act with caution
+                  </p>
+                </td>
+              </tr>
+            </table>
+            {% endif %}
+            {% if entry.is_public_inspection %}
+            <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin-bottom: 14px;">
+              <tr>
+                <td bgcolor="#EFF6FF" style="background-color: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 4px; padding: 4px 10px;">
+                  <p style="margin: 0; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #1D4ED8; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;">
+                    Public Inspection Draft &#8212; dates may be preliminary
+                  </p>
+                </td>
+              </tr>
+            </table>
+            {% endif %}
+            {# Agency — VARIABLE: entry.agency_names #}
+            <p style="margin: 0 0 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+              text-transform: uppercase; color: #9CA3AF; line-height: 1;">
+              {{ entry.agency_names | join(' &nbsp;·&nbsp; ') }}
+            </p>
+            {# Regulation category + publication date + summarization tier #}
+            <p style="margin: 0 0 12px; font-size: 11px; color: #9CA3AF; line-height: 1.4;">
+              {% if entry.regulation_category %}<span style="display: inline-block; background-color: #F3F4F6; border: 1px solid #E5E7EB; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 600; color: #6B7280; letter-spacing: 0.04em; margin-right: 8px;">{{ entry.regulation_category }}</span>{% endif %}Published {{ entry.publication_date | datefmt }}{% if entry.summarization_tier %} &nbsp;&middot;&nbsp; {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
+            </p>
+            {# Title — VARIABLE: entry.title #}
+            <p class="mob-title" style="margin: 0 0 14px; font-size: 18px; font-weight: 700;
+              letter-spacing: -0.01em; color: #0D1117; line-height: 1.3;">
+              {{ entry.title }}
+            </p>
+            {# Summary — VARIABLE: entry.plain_language_summary #}
+            <p style="margin: 0; font-size: 14px; color: #4B5563; line-height: 1.7;">
+              {{ entry.plain_language_summary }}
+            </p>
+            {# Advocacy relevance — VARIABLE: entry.advocacy_relevance #}
+            {% if entry.advocacy_relevance %}
+            <p style="margin: 12px 0 0; font-size: 13px; color: #6B7280; line-height: 1.6; font-style: italic;">
+              {{ entry.advocacy_relevance }}
+            </p>
+            {% endif %}
+          </td>
+        </tr>
+        {# Deadline strip — VARIABLE: entry.comments_close_on, entry.comments_days_left #}
+        {% if entry.comments_close_on %}
+        <tr>
+          <td style="padding: 16px 24px 0;">
+            <table cellpadding="0" cellspacing="0" border="0" role="presentation">
+              <tr>
+                {% if entry.comments_days_left is not none and entry.comments_days_left < 0 %}
+                <td style="background-color: #F3F4F6; border: 1px solid #E5E7EB; border-radius: 6px; padding: 10px 16px;">
+                  <p style="margin: 0; font-size: 12px; color: #9CA3AF; line-height: 1;">
+                    Comment period closed {{ entry.comments_close_on | datefmt }}
+                  </p>
+                </td>
+                {% elif entry.comments_days_left is not none and entry.comments_days_left <= 6 %}
+                <td style="background-color: #FEF2F2; border: 1px solid #FECACA; border-radius: 6px; padding: 10px 16px;">
+                  <p style="margin: 0; font-size: 12px; font-weight: 700; color: #991B1B; line-height: 1;">
+                    &#9719;&nbsp; Comment by {{ entry.comments_close_on | datefmt }} &nbsp;&middot;&nbsp; {{ entry.comments_days_left }} day{% if entry.comments_days_left != 1 %}s{% endif %} left
+                  </p>
+                </td>
+                {% elif entry.comments_days_left is not none and entry.comments_days_left <= 14 %}
+                <td bgcolor="#FFFBEB" style="background-color: #FFFBEB; border: 1px solid #FDE68A; border-radius: 6px; padding: 10px 16px;">
+                  <p style="margin: 0; font-size: 12px; font-weight: 600; color: #B45309; line-height: 1;">
+                    &#9719;&nbsp; Comment by {{ entry.comments_close_on | datefmt }} &nbsp;&middot;&nbsp; {{ entry.comments_days_left }} days left
+                  </p>
+                </td>
+                {% else %}
+                <td bgcolor="#FFFBEB" style="background-color: #FFFBEB; border: 1px solid #FDE68A; border-radius: 6px; padding: 10px 16px;">
+                  <p style="margin: 0; font-size: 12px; font-weight: 600; color: #92400E; line-height: 1;">
+                    &#9719;&nbsp; Comment by {{ entry.comments_close_on | datefmt }}{% if entry.comments_days_left is not none %} &nbsp;&middot;&nbsp; {{ entry.comments_days_left }} days left{% endif %}
+                  </p>
+                </td>
+                {% endif %}
+              </tr>
+            </table>
+          </td>
+        </tr>
+        {% endif %}
+        {# Effective date — VARIABLE: entry.effective_on #}
+        {% if entry.effective_on %}
+        <tr>
+          <td style="padding: 16px 24px 0;">
+            <p style="margin: 0; font-size: 12px; color: #6B7280; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;">
+              Effective {{ entry.effective_on | datefmt }}
+            </p>
+          </td>
+        </tr>
+        {% endif %}
+        {# Button — VARIABLE: entry.source_url #}
+        <tr>
+          <td style="padding: 16px 24px 24px;">
+            <table cellpadding="0" cellspacing="0" border="0" role="presentation">
+              <tr>
+                <td style="border-radius: 100px; border: 1.5px solid #D1D5DB; background-color: #FFFFFF;">
+                  <a href="{{ entry.source_url }}" target="_blank"
+                    style="display: inline-block; padding: 9px 20px;
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                      font-size: 13px; font-weight: 600; color: #4B5563; text-decoration: none; white-space: nowrap;">
+                    View Notice
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        {% if entry.suggested_actions %}
+        <tr>
+          <td style="padding: 0 24px 20px; border-top: 1px solid #F3F4F6;">
+            <p style="margin: 16px 0 8px; font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #9CA3AF; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;">Suggested Actions</p>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+              {% for action in entry.suggested_actions %}
+              <tr>
+                <td valign="top" width="24"
+                  style="font-size: 12px; font-weight: 700; color: #D1D5DB; padding-right: 10px;
+                    line-height: 1.6; white-space: nowrap; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                    padding-bottom: 6px;">
+                  {{ loop.index }}.
+                </td>
+                <td style="font-size: 13px; color: #374151; line-height: 1.6;
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                  padding-bottom: 6px;">
+                  {{ action }}
+                </td>
+              </tr>
+              {% endfor %}
+            </table>
+          </td>
+        </tr>
+        {% endif %}
+        {% if entry.suggested_talking_points %}
+        <tr>
+          <td style="padding: 0 24px 24px; border-top: 1px solid #F3F4F6;">
+            <p style="margin: 16px 0 8px; font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #9CA3AF; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;">Talking Points</p>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+              {% for point in entry.suggested_talking_points %}
+              <tr>
+                <td valign="top" width="24"
+                  style="font-size: 12px; font-weight: 700; color: #D1D5DB; padding-right: 10px;
+                    line-height: 1.6; white-space: nowrap; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                    padding-bottom: 6px;">
+                  {{ loop.index }}.
+                </td>
+                <td style="font-size: 13px; color: #374151; line-height: 1.6;
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                  padding-bottom: 6px;">
+                  {{ point }}
+                </td>
+              </tr>
+              {% endfor %}
+            </table>
+          </td>
+        </tr>
+        {% endif %}
+      </table>
+      {% endfor %}
+    </td>
+  </tr>
+  {% endif %}
+
+  {# ── Footer ─────────────────────────────────────────────────────────────── #}
+  <tr>
+    <td style="height: 1px; background-color: #EAECF0; font-size: 1px; line-height: 1px;">&nbsp;</td>
+  </tr>
+  <tr>
+    <td align="center" class="mob-pad"
+      style="padding: 28px 40px 32px; background-color: #F8F9FB;">
+      <p style="margin: 0 0 5px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+        font-size: 12px; color: #9CA3AF; line-height: 1.5;">
+        Federal Register Sentinel &#8212; powered by Open Paws
+      </p>
+      <p style="margin: 0 0 14px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+        font-size: 12px; color: #9CA3AF; line-height: 1.6;">
+        {# VARIABLE: disclaimer — hardcoded exact string #}
+        {{ disclaimer }}
+      </p>
+      {# WIRE-UP: replace href="#" with {{ unsubscribe_url }} from Open Paws #}
+      <a href="#"
+        style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+          font-size: 12px; color: #C4C9D4; text-decoration: underline;">
+        Unsubscribe
+      </a>
     </td>
   </tr>
 
 </table>
-</div>
+{# ── End container ── #}
+
+    </td>
+  </tr>
+</table>
+{# ── End outer wrapper ── #}
+
 </body>
 </html>

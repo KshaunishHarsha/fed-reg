@@ -3,132 +3,87 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Federal Register Sentinel — {{ digest_date.strftime('%B %d, %Y') }} — No Activity</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background-color: #0f1117;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      font-size: 15px;
-      line-height: 1.6;
-      color: #e2e8f0;
-    }
-    .email-wrapper { width: 100%; background-color: #0f1117; padding: 32px 16px 48px; }
-    .email-container {
-      max-width: 560px;
-      margin: 0 auto;
-      background-color: #1a1d2e;
-      border-radius: 16px;
-      overflow: hidden;
-      border: 1px solid #2d3148;
-    }
-    .header {
-      padding: 40px 40px 32px;
-      border-bottom: 1px solid #2d3148;
-    }
-    .header-eyebrow {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: #6366f1;
-      margin-bottom: 8px;
-    }
-    .header-title { font-size: 22px; font-weight: 800; color: #f1f5f9; margin-bottom: 6px; }
-    .header-date { font-size: 14px; color: #64748b; }
-
-    .body-section { padding: 40px 40px; text-align: center; }
-    .status-icon { font-size: 48px; margin-bottom: 20px; }
-    .status-heading { font-size: 20px; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
-    .status-body { font-size: 14px; color: #64748b; line-height: 1.7; max-width: 360px; margin: 0 auto; }
-
-    .info-box {
-      margin: 24px 40px;
-      padding: 16px 20px;
-      background: rgba(99,102,241,0.08);
-      border: 1px solid rgba(99,102,241,0.2);
-      border-radius: 10px;
-      font-size: 13px;
-      color: #818cf8;
-      text-align: left;
-    }
-
-    .footer {
-      padding: 24px 40px;
-      border-top: 1px solid #2d3148;
-      background: #15182a;
-    }
-    .footer-disclaimer {
-      font-size: 11px;
-      color: #334155;
-      line-height: 1.6;
-      font-style: italic;
-      margin-bottom: 12px;
-    }
-    .footer-links { font-size: 11px; color: #475569; }
-    .footer-links a { color: #64748b; text-decoration: underline; }
-
-    @media only screen and (max-width: 600px) {
-      .header, .body-section, .footer { padding-left: 20px; padding-right: 20px; }
-      .info-box { margin-left: 20px; margin-right: 20px; }
-    }
-  </style>
+  <title>Federal Register Sentinel &#8212; {{ digest_date.strftime('%B %d, %Y') }}</title>
+  <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
 </head>
-<body>
-<div class="email-wrapper">
-<table class="email-container" width="100%" cellpadding="0" cellspacing="0" role="presentation">
 
+<body style="margin: 0; padding: 0; background-color: #EDF0F5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"
+  style="background-color: #EDF0F5; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
   <tr>
-    <td>
-      <div class="header">
-        <div class="header-eyebrow">Open Paws · Federal Register Sentinel</div>
-        <div class="header-title">Daily Regulatory Digest</div>
-        <div class="header-date">{{ digest_date.strftime('%A, %B %d, %Y') }}</div>
-      </div>
+    <td align="center" style="padding: 40px 16px 56px; background-color: #EDF0F5;">
+
+      <table width="600" cellpadding="0" cellspacing="0" border="0" role="presentation"
+        style="max-width: 600px; width: 100%; background-color: #FFFFFF;
+               border: 1px solid #D8DCE5; border-radius: 12px; overflow: hidden;">
+
+        {# Brand bar #}
+        <tr>
+          <td style="height: 5px; background-color: #1B3A5C; font-size: 1px; line-height: 1px;">&nbsp;</td>
+        </tr>
+
+        {# Header — identical to main digest #}
+        <tr>
+          <td align="center"
+            style="padding: 44px 48px 40px; background-color: #FFFFFF; border-bottom: 1px solid #EAECF0;">
+            {# WIRE-UP: replace src with hosted ALDF logo URL #}
+            <img src="https://placehold.co/128x32/FFFFFF/1B3A5C?text=ALDF"
+              alt="Animal Legal Defense Fund" width="128" height="32"
+              style="display: block; margin: 0 auto 28px; border: 0;" />
+            {# VARIABLE: digest_date #}
+            <p style="margin: 0 0 6px; font-size: 28px; font-weight: 700;
+              letter-spacing: -0.02em; color: #0D1117; line-height: 1.1;">
+              {{ digest_date | datefmt }}
+            </p>
+            <p style="margin: 0; font-size: 14px; color: #6B7280; line-height: 1.5;">
+              Federal animal law activity for your review
+            </p>
+          </td>
+        </tr>
+
+        {# Zero result body #}
+        <tr>
+          <td align="center" style="padding: 64px 48px 60px; background-color: #FFFFFF;">
+            <p style="margin: 0; font-size: 15px; color: #6B7280; line-height: 1.8; max-width: 360px;">
+              No animal-relevant federal activity was identified today.
+              The system ran successfully.
+            </p>
+          </td>
+        </tr>
+
+        {# Footer — identical to main digest #}
+        <tr>
+          <td style="height: 1px; background-color: #EAECF0; font-size: 1px; line-height: 1px;">&nbsp;</td>
+        </tr>
+        <tr>
+          <td align="center"
+            style="padding: 28px 40px 32px; background-color: #F8F9FB;">
+            <p style="margin: 0 0 5px;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+              font-size: 12px; color: #9CA3AF; line-height: 1.5;">
+              Federal Register Sentinel &#8212; powered by Open Paws
+            </p>
+            <p style="margin: 0 0 14px;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+              font-size: 12px; color: #9CA3AF; line-height: 1.6;">
+              This digest is informational only and does not constitute legal advice.
+            </p>
+            {# WIRE-UP: replace href="#" with {{ unsubscribe_url }} from Open Paws #}
+            <a href="#"
+              style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                font-size: 12px; color: #C4C9D4; text-decoration: underline;">
+              Unsubscribe
+            </a>
+          </td>
+        </tr>
+
+      </table>
     </td>
   </tr>
-
-  <tr>
-    <td>
-      <div class="body-section">
-        <div class="status-icon">🟢</div>
-        <div class="status-heading">No Animal-Relevant Activity Today</div>
-        <div class="status-body">
-          The Federal Register Sentinel pipeline ran successfully on
-          <strong>{{ digest_date.strftime('%B %d, %Y') }}</strong> and found
-          no new federal regulatory documents matching animal welfare or related
-          advocacy criteria for your monitored agencies.
-        </div>
-      </div>
-    </td>
-  </tr>
-
-  <tr>
-    <td>
-      <div class="info-box">
-        ✓ &nbsp;Pipeline completed normally — this is a quiet regulatory day, not a system error.<br />
-        ✓ &nbsp;All monitored agencies were queried: USDA, FDA, NOAA, Fish &amp; Wildlife, NIH.<br />
-        ✓ &nbsp;No documents matched animal-relevance thresholds today.
-      </div>
-    </td>
-  </tr>
-
-  <tr>
-    <td>
-      <div class="footer">
-        <div class="footer-disclaimer">
-          This digest is generated automatically for informational purposes only. Nothing in this digest
-          constitutes legal advice. This message confirms system operation — no action is required.
-        </div>
-        <div class="footer-links">
-          <a href="https://www.federalregister.gov" target="_blank">Federal Register</a> ·
-          Open Paws Federal Register Sentinel
-        </div>
-      </div>
-    </td>
-  </tr>
-
 </table>
-</div>
+
 </body>
 </html>

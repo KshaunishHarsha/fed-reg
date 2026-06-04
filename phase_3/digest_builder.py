@@ -54,12 +54,18 @@ logger = logging.getLogger(__name__)
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
 
+def _datefmt(d: date) -> str:
+    """Format date as 'Month D, YYYY' without a leading zero on the day (cross-platform)."""
+    return d.strftime("%B ") + str(d.day) + d.strftime(", %Y")
+
+
 _jinja_env = Environment(
     loader=FileSystemLoader(str(_TEMPLATES_DIR)),
     autoescape=select_autoescape(["html"]),
     trim_blocks=True,
     lstrip_blocks=True,
 )
+_jinja_env.filters["datefmt"] = _datefmt
 
 
 # ---------------------------------------------------------------------------
@@ -78,6 +84,7 @@ class DigestEntry:
     regulation_category: Optional[str]
     comments_close_on: Optional[date]
     effective_on: Optional[date]
+    publication_date: date
     source_url: str                          # federalregister.gov/d/{doc_num}
     comment_portal_url: Optional[str]        # regulations.gov link (if available)
     # LLM-generated fields (parsed from xml_summary_blob)
@@ -86,6 +93,10 @@ class DigestEntry:
     suggested_actions: List[str]
     suggested_talking_points: List[str]
     disclaimer: str                          # hardcoded exact string
+    # Computed / derived
+    is_public_inspection: bool               # True when abstract is None (pre-publication draft)
+    comments_days_left: Optional[int]        # None if no deadline; negative if expired
+    summarization_tier: Optional[int]        # 1=abstract only, 2=body, 3=full doc
     # Section assignment
     section: str                             # "A" | "B" | "C"
     is_needs_confirmation: bool = False      # drives Section C badge
@@ -263,6 +274,7 @@ def build_digest(rows: List[DigestRow], digest_date: date) -> DigestPackage:
             regulation_category=row.regulation_category,
             comments_close_on=row.comments_close_on,
             effective_on=row.effective_on,
+            publication_date=row.publication_date,
             source_url=_build_source_url(row.document_number),
             comment_portal_url=_build_comment_url(row.comment_url),
             plain_language_summary=llm["plain_language_summary"],
@@ -270,6 +282,13 @@ def build_digest(rows: List[DigestRow], digest_date: date) -> DigestPackage:
             suggested_actions=llm["suggested_actions"],
             suggested_talking_points=llm["suggested_talking_points"],
             disclaimer=llm.get("disclaimer", _DISCLAIMER),
+            is_public_inspection=(row.abstract is None),
+            comments_days_left=(
+                (row.comments_close_on - today).days
+                if row.comments_close_on is not None
+                else None
+            ),
+            summarization_tier=row.summarization_tier,
             section=section,
             is_needs_confirmation=(row.confidence == "NEEDS_CONFIRMATION"),
         )

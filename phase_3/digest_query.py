@@ -58,6 +58,8 @@ class DigestRow:
     comment_url: Optional[str]
     publication_date: date
     xml_summary_blob: str
+    abstract: Optional[str]
+    summarization_tier: Optional[int]
 
 
 # ---------------------------------------------------------------------------
@@ -77,7 +79,9 @@ _DIGEST_QUERY = text("""
         d.html_url,
         d.comment_url,
         d.publication_date,
-        s.xml_summary_blob
+        s.xml_summary_blob,
+        d.abstract,
+        s.summarization_tier
     FROM documents d
     INNER JOIN summaries s ON d.document_number = s.document_number
     WHERE d.pipeline_state IN ('SUMMARY_GENERATED', 'DIGEST_SENT')
@@ -128,6 +132,8 @@ async def fetch_digest_rows(target_date: date) -> List[DigestRow]:
             comment_url=rec[9],
             publication_date=rec[10],
             xml_summary_blob=rec[11],
+            abstract=rec[12],
+            summarization_tier=rec[13],
         ))
 
     logger.info(

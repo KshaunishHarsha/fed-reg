@@ -1,152 +1,134 @@
-================================================================================
-OPEN PAWS · FEDERAL REGISTER SENTINEL
-Daily Regulatory Digest — {{ digest_date.strftime('%A, %B %d, %Y') }}
-================================================================================
+FEDERAL REGISTER SENTINEL
+{{ digest_date.strftime('%B %d, %Y') | upper }}
+Powered by Open Paws / Animal Legal Defense Fund
 
-Animal-relevant federal activity for your review.
+Here is what changed in federal animal law today.
 
-{{ section_a | length }} Action Required  |  {{ section_b | length }} Watchdog  |  {{ section_c | length }} Potential Matches
-Total documents: {{ total }}
+{{ section_a | length }} Action Required   {{ section_b | length }} Watchdog Monitoring   {{ section_c | length }} Potential Matches
 
-================================================================================
 {% if has_a %}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION A — ACTION REQUIRED
-Proposed rules with open public comment windows · Attorney review needed
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+========================================
+ACTION REQUIRED
+========================================
 {% for entry in section_a %}
 
-[PROPOSED RULE]{% if entry.agency_names %} {{ entry.agency_names | join(' / ') }}{% endif %}
+{% if entry.is_public_inspection %}*** PUBLIC INSPECTION DRAFT — dates may be preliminary ***
+{% endif %}{{ entry.agency_names | join(' / ') | upper }}
+{% if entry.regulation_category %}{{ entry.regulation_category }} | {% endif %}Published {{ entry.publication_date.strftime('%B %d, %Y') }}{% if entry.summarization_tier %} | {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
 
 {{ entry.title }}
 {% if entry.comments_close_on %}
-*** COMMENT DEADLINE: {{ entry.comments_close_on.strftime('%B %d, %Y') }} ***
+COMMENT DEADLINE: {{ entry.comments_close_on.strftime('%B %d, %Y') }}{% if entry.comments_days_left is not none %} ({% if entry.comments_days_left <= 6 %}URGENT — {% endif %}{{ entry.comments_days_left }} day{% if entry.comments_days_left != 1 %}s{% endif %} left){% endif %}
+{% endif %}
+{% if entry.effective_on %}Effective: {{ entry.effective_on.strftime('%B %d, %Y') }}
+{% endif %}
+{{ entry.plain_language_summary }}
+{% if entry.advocacy_relevance %}
+{{ entry.advocacy_relevance }}
 {% endif %}
 
-SUMMARY
-{{ entry.plain_language_summary }}
-
-ADVOCACY RELEVANCE
-{{ entry.advocacy_relevance }}
+Source:  {{ entry.source_url }}
+{% if entry.comment_portal_url %}Comment: {{ entry.comment_portal_url }}
+{% endif %}
 {% if entry.suggested_actions %}
-
-SUGGESTED ACTIONS
-{% for action in entry.suggested_actions %}  › {{ action }}
+Suggested Actions
+{% for action in entry.suggested_actions %}  {{ loop.index }}. {{ action }}
 {% endfor %}
 {% endif %}
 {% if entry.suggested_talking_points %}
-
-TALKING POINTS
-{% for point in entry.suggested_talking_points %}  " {{ point }}
+Talking Points
+{% for point in entry.suggested_talking_points %}  {{ loop.index }}. {{ point }}
 {% endfor %}
-{% endif %}
-
-SOURCE:  {{ entry.source_url }}
-{% if entry.comment_portal_url %}COMMENT: {{ entry.comment_portal_url }}
 {% endif %}
 {{ entry.disclaimer }}
 
---------------------------------------------------------------------------------
+----------------------------------------
 {% endfor %}
 {% endif %}
 {% if has_b %}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION B — WATCHDOG MONITORING
-Final rules and informational notices · Litigation planning
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+========================================
+WATCHDOG MONITORING
+========================================
 {% for entry in section_b %}
 
-[{{ (entry.regulation_category or 'DOCUMENT') | upper }}]{% if entry.agency_names %} {{ entry.agency_names | join(' / ') }}{% endif %}
+{% if entry.is_public_inspection %}*** PUBLIC INSPECTION DRAFT — dates may be preliminary ***
+{% endif %}{{ entry.agency_names | join(' / ') | upper }}
+{% if entry.regulation_category %}{{ entry.regulation_category }} | {% endif %}Published {{ entry.publication_date.strftime('%B %d, %Y') }}{% if entry.summarization_tier %} | {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
 
 {{ entry.title }}
-{% if entry.effective_on %}
-Effective: {{ entry.effective_on.strftime('%B %d, %Y') }}
+{% if entry.comments_close_on %}
+COMMENT DEADLINE: {{ entry.comments_close_on.strftime('%B %d, %Y') }}{% if entry.comments_days_left is not none %} ({% if entry.comments_days_left <= 6 %}URGENT — {% endif %}{{ entry.comments_days_left }} day{% if entry.comments_days_left != 1 %}s{% endif %} left){% endif %}
+{% endif %}
+{% if entry.effective_on %}Effective: {{ entry.effective_on.strftime('%B %d, %Y') }}
+{% endif %}
+{{ entry.plain_language_summary }}
+{% if entry.advocacy_relevance %}
+{{ entry.advocacy_relevance }}
 {% endif %}
 
-SUMMARY
-{{ entry.plain_language_summary }}
-
-ADVOCACY RELEVANCE
-{{ entry.advocacy_relevance }}
+Source: {{ entry.source_url }}
+{% if entry.comment_portal_url %}Comment: {{ entry.comment_portal_url }}
+{% endif %}
 {% if entry.suggested_actions %}
-
-SUGGESTED ACTIONS
-{% for action in entry.suggested_actions %}  › {{ action }}
+Suggested Actions
+{% for action in entry.suggested_actions %}  {{ loop.index }}. {{ action }}
 {% endfor %}
 {% endif %}
 {% if entry.suggested_talking_points %}
-
-TALKING POINTS
-{% for point in entry.suggested_talking_points %}  " {{ point }}
+Talking Points
+{% for point in entry.suggested_talking_points %}  {{ loop.index }}. {{ point }}
 {% endfor %}
-{% endif %}
-
-SOURCE: {{ entry.source_url }}
-{% if entry.comment_portal_url %}DOCKET: {{ entry.comment_portal_url }}
 {% endif %}
 {{ entry.disclaimer }}
 
---------------------------------------------------------------------------------
+----------------------------------------
 {% endfor %}
 {% endif %}
 {% if has_c %}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION C — POTENTIAL MATCHES
-Borderline or unconfirmed relevance · Manual review recommended
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+========================================
+POTENTIAL MATCHES
+========================================
 {% for entry in section_c %}
 
-{% if entry.is_needs_confirmation %}[⚠ UNVERIFIED RELEVANCE] {% endif %}[{{ (entry.regulation_category or 'DOCUMENT') | upper }}]{% if entry.agency_names %} {{ entry.agency_names | join(' / ') }}{% endif %}
+{% if entry.is_needs_confirmation %}UNREVIEWED - ACT WITH CAUTION
+{% endif %}{% if entry.is_public_inspection %}*** PUBLIC INSPECTION DRAFT — dates may be preliminary ***
+{% endif %}{{ entry.agency_names | join(' / ') | upper }}
+{% if entry.regulation_category %}{{ entry.regulation_category }} | {% endif %}Published {{ entry.publication_date.strftime('%B %d, %Y') }}{% if entry.summarization_tier %} | {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
 
 {{ entry.title }}
-
-SUMMARY
+{% if entry.comments_close_on %}
+{% if entry.comments_days_left is not none and entry.comments_days_left < 0 %}Comment period closed: {{ entry.comments_close_on.strftime('%B %d, %Y') }}
+{% else %}COMMENT DEADLINE: {{ entry.comments_close_on.strftime('%B %d, %Y') }}{% if entry.comments_days_left is not none %} ({{ entry.comments_days_left }} day{% if entry.comments_days_left != 1 %}s{% endif %} left){% endif %}
+{% endif %}
+{% endif %}
+{% if entry.effective_on %}Effective: {{ entry.effective_on.strftime('%B %d, %Y') }}
+{% endif %}
 {{ entry.plain_language_summary }}
 {% if entry.advocacy_relevance %}
-
-POTENTIAL ADVOCACY RELEVANCE
 {{ entry.advocacy_relevance }}
 {% endif %}
-{% if entry.suggested_actions %}
 
-SUGGESTED ACTIONS
-{% for action in entry.suggested_actions %}  › {{ action }}
+Source: {{ entry.source_url }}
+{% if entry.suggested_actions %}
+Suggested Actions
+{% for action in entry.suggested_actions %}  {{ loop.index }}. {{ action }}
 {% endfor %}
 {% endif %}
-
-SOURCE: {{ entry.source_url }}
-
+{% if entry.suggested_talking_points %}
+Talking Points
+{% for point in entry.suggested_talking_points %}  {{ loop.index }}. {{ point }}
+{% endfor %}
+{% endif %}
 {{ entry.disclaimer }}
 
---------------------------------------------------------------------------------
+----------------------------------------
 {% endfor %}
 {% endif %}
 
-================================================================================
-LEGAL DISCLAIMER
-
-This digest is generated automatically for informational purposes only.
-All summaries are AI-generated and may not be complete or accurate. Nothing
-in this digest constitutes legal advice or formal legal analysis. Always
-verify information against the official Federal Register source before taking
-any action. ALDF attorneys and staff should independently review source
-documents for any matter requiring professional legal judgment.
-
+========================================
+Federal Register Sentinel - powered by Open Paws
 {{ disclaimer }}
-
-================================================================================
-OPEN PAWS · Animal Legal Defense Fund
-Federal Register Sentinel — Automated regulatory monitoring for animal advocates
-
-Digest generated {{ built_at.strftime('%Y-%m-%d %H:%M UTC') }}
-
-Federal Register:  https://www.federalregister.gov
-Regulations.gov:   https://www.regulations.gov
-
-You are receiving this because you are subscribed to the Open Paws Federal
-Register Sentinel. To manage your subscription, visit your Open Paws account
-settings.
-================================================================================
+To unsubscribe, visit your Open Paws account settings.
+========================================
