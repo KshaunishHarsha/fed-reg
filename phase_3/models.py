@@ -30,11 +30,11 @@ from pydantic import BaseModel, field_validator
 DISCLAIMER_EXACT = (
     "This summary is informational only and does not constitute legal advice."
 )
-MAX_SENTENCE_SUMMARY = 3
-MAX_SENTENCE_RELEVANCE = 2
-MAX_ITEMS_ACTIONS = 3
-MAX_ITEMS_POINTS = 3
-MAX_WORDS_PER_ITEM = 25
+MAX_SENTENCE_SUMMARY = 10
+MAX_SENTENCE_RELEVANCE = 5
+MAX_ITEMS_ACTIONS = 5
+MAX_ITEMS_POINTS = 5
+MAX_WORDS_PER_ITEM = 50
 URL_PATTERN = re.compile(r"https?://\S+", re.IGNORECASE)
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 

@@ -25,9 +25,10 @@ Rules you must always follow:
 - The disclaimer field must always be exactly: \
 "This summary is informational only and does not constitute legal advice."
 - regulation_category must be one of: welfare, wildlife, agriculture, research_animals, marine, trade.
-- plain_language_summary must be 100 words or fewer.
-- suggested_actions: maximum 3 items, each 25 words or fewer.
-- suggested_talking_points: maximum 3 items, each 25 words or fewer.\
+- plain_language_summary must be 3 sentences or fewer (maximum 100 words).
+- advocacy_relevance must be 2 sentences or fewer.
+- suggested_actions: 1 to 3 items, each 25 words or fewer.
+- suggested_talking_points: 1 to 3 items, each 25 words or fewer.\
 """
 
 _SYSTEM_PUBLIC_INSPECTION = """\

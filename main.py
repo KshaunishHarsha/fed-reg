@@ -33,6 +33,9 @@ app.include_router(phase2_router)
 # Included when Phase 3 is available. Provides /phase3/status, /phase3/digest/test, etc.
 try:
     from phase_3.router import router as phase3_router
+    from phase_3.db import init_db
+    
+    init_db()  # Initialize the Phase 3 database connection pool
     app.include_router(phase3_router)
 except ImportError:
     pass  # Phase 3 not yet wired up — unified app still works for Phase 1/2

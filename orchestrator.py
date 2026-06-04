@@ -145,6 +145,25 @@ async def run_full_pipeline(target_date: Optional[str] = None) -> dict:
                 f"A:{package.section_a_count} B:{package.section_b_count} "
                 f"C:{package.section_c_count} (zero={package.is_zero_result})"
             )
+            
+            # Temporary dev hook: Automatically send the test digest email
+            try:
+                from phase_3.mail_test import load_test_recipients, send_test_digest
+                recipients = load_test_recipients()
+                loop = asyncio.get_event_loop()
+                result = await loop.run_in_executor(
+                    _executor,
+                    lambda: send_test_digest(
+                        html_body=package.html_body,
+                        text_body=package.text_body,
+                        digest_date=package.digest_date,
+                        recipients=recipients,
+                    ),
+                )
+                print(f"[Orchestrator] Test email sent to {result['sent']} (failed: {result['failed']})")
+            except Exception as e:
+                print(f"[Orchestrator] Failed to send test email: {e}")
+                
             # TODO Step 4: platform_handoff.send_digest(package)
             digest_built = True
         else:

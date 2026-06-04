@@ -80,7 +80,7 @@ _DIGEST_QUERY = text("""
         s.xml_summary_blob
     FROM documents d
     INNER JOIN summaries s ON d.document_number = s.document_number
-    WHERE d.pipeline_state = 'SUMMARY_GENERATED'
+    WHERE d.pipeline_state IN ('SUMMARY_GENERATED', 'DIGEST_SENT')
       AND d.publication_date = :target_date
     ORDER BY
         CASE d.type
