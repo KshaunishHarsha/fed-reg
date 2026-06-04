@@ -20,10 +20,8 @@ Every morning the full system:
 ## How to Run
 
 ```bash
-# Install dependencies
-pip install -r phase_1/requirements.txt
-pip install -r phase_2/requirements.txt
-# Phase 3 has its own requirements — see phase_3/
+# Install all dependencies
+pip install -r requirements.txt
 
 # Start the unified app (all phases, one process, port 8000)
 python main.py

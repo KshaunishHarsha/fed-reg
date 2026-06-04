@@ -1,0 +1,39 @@
+# Federal Register Sentinel — unified dependencies (all phases)
+
+# LLM + structured output
+openai>=1.0.0
+instructor>=1.0.0
+
+# Validation
+pydantic>=2.0.0
+
+# API framework
+fastapi>=0.100.0
+uvicorn>=0.20.0
+
+# HTTP clients
+requests>=2.31.0
+httpx>=0.24.0
+
+# Database
+supabase>=2.0.0
+sqlalchemy[asyncio]>=2.0.0
+asyncpg>=0.28.0
+
+# PDF parsing (Phase 1 Layer 2a)
+pymupdf>=1.23.0
+
+# HTML parsing (Phase 2 Tier 2)
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# Config + env
+python-dotenv>=1.0.0
+pyyaml>=6.0.0
+
+# Scheduling
+apscheduler>=3.10.0
+
+# Testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
