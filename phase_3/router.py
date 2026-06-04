@@ -6,26 +6,31 @@ FastAPI router for Phase 3. Mounted at prefix /phase3 in the main app.
 Implemented steps:
   Step 1 — Validation + self-correction retry loop
   Step 2 — Database storage and idempotency fail-safe
+  Step 3 — Digest compilation and dual-layer email layout
 
-Steps 3-4 (digest compilation, platform handoff) will be added in later sprints.
+Step 4 (platform handoff) will be added in the next sprint.
 
 Endpoints:
   POST /phase3/ingest                    - Receive Phase 2 payload, validate, persist
   GET  /phase3/status/{document_number}  - Check pipeline_state for a document
+  POST /phase3/digest/build              - Compile and return today's digest package
   POST /phase3/validate/test             - Dev utility: validate XML blob in isolation
 """
 
 from __future__ import annotations
 
 import logging
+from datetime import date
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, Body, HTTPException, Path, status
+from fastapi import APIRouter, Body, HTTPException, Path, Query, status
 from pydantic import BaseModel
 from sqlalchemy import text
 
 from phase_3.db import get_session_factory
+from phase_3.digest_builder import DigestPackage, build_digest
+from phase_3.digest_query import fetch_digest_rows
 from phase_3.models import IngestPayload, ValidationResult
 from phase_3.persistence import PersistenceResult, persist_validated_document
 from phase_3.validator import validate_blob
@@ -288,6 +293,64 @@ async def get_document_status(
         )
 
     return {"document_number": document_number, "pipeline_state": record[0]}
+
+
+# ---------------------------------------------------------------------------
+# POST /phase3/digest/build  — Step 3: compile today's digest
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/digest/build",
+    response_model=DigestPackage,
+    summary="Step 3: Compile the daily digest for a given date (default: today).",
+    responses={
+        200: {"description": "Digest compiled. is_zero_result=True means circuit-breaker fired."},
+        503: {"description": "Database error during digest compilation."},
+    },
+)
+async def build_digest_endpoint(
+    target_date: Optional[date] = Query(
+        default=None,
+        description="Date to compile the digest for (ISO format YYYY-MM-DD). Defaults to today (UTC).",
+    ),
+) -> DigestPackage:
+    """
+    Step 3 — Digest Compilation.
+
+    Queries the database for all SUMMARY_GENERATED documents on `target_date`,
+    splits them into sections A / B / C by urgency, parses XML blobs into
+    LLM fields, builds static outbound links from DB columns, and renders
+    both HTML and plain-text email bodies.
+
+    If no documents are found, the circuit-breaker fires and the returned
+    DigestPackage has is_zero_result=True with a minimal confirmation body.
+
+    Step 4 (platform handoff / actual sending) is wired separately in
+    platform_handoff.py and will call this function internally.
+
+    Returns the full DigestPackage (html_body, text_body, section counts).
+    """
+    from datetime import datetime, timezone  # local import — only needed here
+
+    run_date = target_date or datetime.now(timezone.utc).date()
+
+    try:
+        rows = await fetch_digest_rows(run_date)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database error while fetching digest rows: {exc}",
+        )
+
+    try:
+        package = build_digest(rows, run_date)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Error during digest compilation: {exc}",
+        )
+
+    return package
 
 
 # ---------------------------------------------------------------------------
