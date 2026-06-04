@@ -4,11 +4,19 @@ Unified pipeline orchestrator.
 Calls Phase 1 → Phase 2 → Phase 3 sequentially via direct function calls.
 No HTTP requests between phases — all in-process.
 
-Phase 3 interface assumed (Phase 3 team must expose these):
-  phase_3.validator.validate(xml_blob: str) -> object with .is_valid (bool) + .error_detail (str)
-  phase_3.persistence.save_ingested(doc: DocumentRecord, xml_blob: str) -> None  [async]
-  phase_3.digest_query.get_documents_for_date(run_date: date) -> List[dict]       [async]
-  phase_3.digest_builder.build_digest(docs: List[dict]) -> DigestPackage          [async]
+Phase 3 interface (confirmed from phase_3/ source):
+  phase_3.validator.validate_blob(doc_number: str, xml_blob: str)
+      → ValidationResult (.passed: bool, .error_detail: Optional[str])   [sync]
+
+  phase_3.persistence.persist_validated_document(doc_number: str)
+      → PersistenceResult (.promoted: bool, .was_cached: bool)            [async]
+
+  phase_3.digest_query.fetch_digest_rows(run_date: date)
+      → List[DigestRow]                                                    [async]
+
+  phase_3.digest_builder.build_digest(rows: List[DigestRow], digest_date: date)
+      → DigestPackage (.html_body, .text_body, .section_a/b/c_count,
+                       .is_zero_result)                                    [sync — no await]
 """
 
 import asyncio
