@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from pipeline import handle_correction, run_pipeline
+from phase_2.pipeline import handle_correction, run_pipeline
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 

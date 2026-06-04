@@ -3,17 +3,17 @@ from typing import Awaitable, Callable, Optional
 
 from dotenv import load_dotenv
 
-from database import (
+from phase_2.database import (
     fetch_document_by_number,
     fetch_pending_documents,
     increment_correction_attempts,
     save_summary,
     update_pipeline_state,
 )
-from models import DocumentRecord
-from summarizer import summarize
-from tier_router import route_and_prepare
-from xml_builder import build_xml
+from phase_2.models import DocumentRecord
+from phase_2.summarizer import summarize
+from phase_2.tier_router import route_and_prepare
+from phase_2.xml_builder import build_xml
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 

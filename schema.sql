@@ -52,11 +52,14 @@ CREATE INDEX idx_documents_relevant
 
 -- TABLE 2: summaries (Phase 2 owned, defined here for schema coherence)
 CREATE TABLE summaries (
-    document_number     TEXT PRIMARY KEY
-                        REFERENCES documents(document_number) ON DELETE CASCADE,
-    xml_summary_blob    TEXT NOT NULL,
-    created_at          TIMESTAMPTZ DEFAULT now(),
-    updated_at          TIMESTAMPTZ DEFAULT now()
+    document_number       TEXT PRIMARY KEY
+                          REFERENCES documents(document_number) ON DELETE CASCADE,
+    xml_summary_blob      TEXT NOT NULL,
+    summarization_tier    INTEGER,                        -- 1 | 2 | 3
+    summarization_status  TEXT DEFAULT 'complete',        -- 'complete' | 'failed'
+    correction_attempts   INTEGER NOT NULL DEFAULT 0,     -- Phase 3 correction loop counter
+    created_at            TIMESTAMPTZ DEFAULT now(),
+    updated_at            TIMESTAMPTZ DEFAULT now()
 );
 
 

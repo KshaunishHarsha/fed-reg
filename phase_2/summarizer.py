@@ -7,7 +7,7 @@ import instructor
 import openai
 from dotenv import load_dotenv
 
-from models import DocumentRecord, DocumentSummary
+from phase_2.models import DocumentRecord, DocumentSummary
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 

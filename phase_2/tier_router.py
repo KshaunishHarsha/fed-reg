@@ -1,5 +1,5 @@
-from models import DocumentRecord
-import boilerplate_pruner
+from phase_2.models import DocumentRecord
+import phase_2.boilerplate_pruner as boilerplate_pruner
 
 
 def route_and_prepare(doc: DocumentRecord) -> tuple[int, str]:

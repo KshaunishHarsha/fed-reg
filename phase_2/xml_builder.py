@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 
-from models import DocumentSummary
+from phase_2.models import DocumentSummary
 
 
 def build_xml(summary: DocumentSummary) -> str:

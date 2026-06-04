@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-from models import DocumentRecord
+from phase_2.models import DocumentRecord
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 

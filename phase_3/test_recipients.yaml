@@ -18,13 +18,13 @@
 # Add this path to .gitignore if the addresses must stay private.
 
 recipients:
-  - email: dev1@example.com
+  - email: codetest195@gmail.com
     name: Developer One
     enabled: true
 
   - email: dev2@example.com
     name: Developer Two
-    enabled: true
+    enabled: false
 
   # Uncomment to add more addresses:
   # - email: partner@example.com
