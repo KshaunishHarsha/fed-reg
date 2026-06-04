@@ -35,18 +35,21 @@ async def _phase3_validate_and_save(doc, xml_blob: str) -> tuple[bool, Optional[
     If Phase 3 modules aren't available yet, passes through silently.
     """
     try:
-        from phase_3.validator import validate
-        from phase_3.persistence import save_ingested
+        # Actual Phase 3 interfaces (confirmed from phase_3/router.py):
+        #   validate_blob(doc_number, xml_blob) -> ValidationResult (.passed, .error_detail)
+        #   persist_validated_document(doc_number) -> PersistenceResult  [async]
+        from phase_3.validator import validate_blob
+        from phase_3.persistence import persist_validated_document
 
-        result = validate(xml_blob)
-        if not result.is_valid:
+        result = validate_blob(doc.document_number, xml_blob)
+        if not result.passed:
             return False, result.error_detail
 
-        await save_ingested(doc, xml_blob)
+        await persist_validated_document(doc.document_number)
         return True, None
 
     except ImportError:
-        # Phase 3 not yet integrated — don't block Phase 2 processing
+        # Phase 3 not yet wired into this process — don't block Phase 2
         return True, None
     except Exception as exc:
         return False, str(exc)
@@ -120,14 +123,21 @@ async def run_full_pipeline(target_date: Optional[str] = None) -> dict:
     # Build and send the daily digest from all SUMMARY_GENERATED documents.
     digest_built = False
     try:
-        from phase_3.digest_query import get_documents_for_date
+        # Actual Phase 3 interfaces (confirmed from phase_3/router.py):
+        #   fetch_digest_rows(run_date) -> List[Row]  [async]
+        #   build_digest(rows, run_date) -> DigestPackage  [sync]
+        from phase_3.digest_query import fetch_digest_rows
         from phase_3.digest_builder import build_digest
 
-        docs = await get_documents_for_date(run_date)
-        if docs:
-            package = await build_digest(docs)
-            print(f"[Orchestrator] Phase 3 digest built — {len(docs)} documents")
-            # TODO Step 4: await platform_handoff.send_digest(package)
+        rows = await fetch_digest_rows(run_date)
+        if rows:
+            package = build_digest(rows, run_date)
+            print(
+                f"[Orchestrator] Phase 3 digest built — "
+                f"A:{package.section_a_count} B:{package.section_b_count} "
+                f"C:{package.section_c_count} (zero={package.is_zero_result})"
+            )
+            # TODO Step 4: platform_handoff.send_digest(package)
             digest_built = True
         else:
             print(f"[Orchestrator] No summarized documents for digest on {run_date}")
