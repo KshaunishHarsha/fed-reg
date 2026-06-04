@@ -11,15 +11,17 @@ Implemented steps:
 Step 4 (platform handoff) will be added in the next sprint.
 
 Endpoints:
-  POST /phase3/ingest                    - Receive Phase 2 payload, validate, persist
+  POST /phase3/run                       - [CRON] Single entry point: runs Phase 1 → 2 → 3 end-to-end
+  POST /phase3/ingest                    - Receive Phase 2 payload, validate, persist (called by Phase 2)
   GET  /phase3/status/{document_number}  - Check pipeline_state for a document
-  POST /phase3/digest/build              - Compile and return today's digest package
-  POST /phase3/validate/test             - Dev utility: validate XML blob in isolation
+  POST /phase3/digest/test               - [Dev] Compile email for a date without running the full pipeline
+  POST /phase3/validate/test             - [Dev] Validate a raw XML blob in isolation
 """
 
 from __future__ import annotations
 
 import logging
+import os
 from datetime import date
 from typing import Optional
 
@@ -39,15 +41,24 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/phase3", tags=["Phase 3 — Post-Processing"])
 
 # ---------------------------------------------------------------------------
-# Configuration (will move to settings/env in a later sprint)
+# Configuration — all URLs read from environment variables at startup
 # ---------------------------------------------------------------------------
 
 MAX_RETRIES = 2  # Maximum self-correction cycles before giving up
 
-# Phase 2 correction endpoint — Phase 3 sends the error_detail back here.
-# Phase 2 re-runs the LLM with the error as a correction prompt and returns
-# a new xml_summary_blob. Set via environment variable in production.
-PHASE2_CORRECTION_URL: str | None = None  # Set from env in main app startup
+# Phase 1: document ingestion service
+# Expected: POST {PHASE1_RUN_URL}  →  triggers today's Federal Register pull
+# Returns any JSON body (Phase 3 only checks HTTP 2xx for success).
+PHASE1_RUN_URL: str | None = os.environ.get("PHASE1_RUN_URL")  # e.g. http://localhost:8001/phase1/run
+
+# Phase 2: summarization service
+# Expected: POST {PHASE2_RUN_URL}  →  triggers LLM summarization for INGESTED docs
+# Returns any JSON body (Phase 3 only checks HTTP 2xx for success).
+PHASE2_RUN_URL: str | None = os.environ.get("PHASE2_RUN_URL")  # e.g. http://localhost:8002/phase2/run
+
+# Phase 2 correction endpoint — Phase 3 sends the error_detail back here
+# so Phase 2 can re-run the LLM with the error as a correction prompt.
+PHASE2_CORRECTION_URL: str | None = os.environ.get("PHASE2_CORRECTION_URL")
 
 
 # ---------------------------------------------------------------------------
@@ -296,41 +307,158 @@ async def get_document_status(
 
 
 # ---------------------------------------------------------------------------
-# POST /phase3/digest/build  — Step 3: compile today's digest
+# POST /phase3/run  — PRODUCTION CRON ENTRY POINT
+# ---------------------------------------------------------------------------
+
+class PipelineRunResult(BaseModel):
+    """Summary result returned by the single cron endpoint."""
+    run_date: date
+    phase1_ok: bool
+    phase2_ok: bool
+    phase3_ok: bool
+    is_zero_result: bool
+    section_a_count: int = 0
+    section_b_count: int = 0
+    section_c_count: int = 0
+    total_documents: int = 0
+    phase1_error: Optional[str] = None
+    phase2_error: Optional[str] = None
+    phase3_error: Optional[str] = None
+
+
+@router.post(
+    "/run",
+    response_model=PipelineRunResult,
+    summary="[CRON] Run the full pipeline: Phase 1 → Phase 2 → Phase 3.",
+    responses={
+        200: {"description": "Pipeline completed (check per-phase ok flags for partial failures)."},
+        503: {"description": "Unrecoverable error prevented the pipeline from starting."},
+    },
+)
+async def run_pipeline(
+    target_date: Optional[date] = Query(
+        default=None,
+        description="Date to run the pipeline for. Defaults to today (UTC). Use for backfills.",
+    ),
+) -> PipelineRunResult:
+    """
+    Single entry point for the daily cron job.
+
+    Execution order:
+      1. POST to PHASE1_RUN_URL  — ingests today's Federal Register documents.
+      2. POST to PHASE2_RUN_URL  — summarizes newly INGESTED documents via LLM.
+      3. Internally runs Phase 3 digest compilation on SUMMARY_GENERATED documents.
+
+    Each phase is attempted independently. If Phase 1 fails, Phase 2 and 3 still
+    run against whatever documents are already in the database from previous runs.
+    This means a Phase 1 outage does not silence the digest — it just means today's
+    new documents may be missing from this run.
+
+    The response contains per-phase ok flags and error strings so the cron
+    scheduler / alerting system can identify exactly which phase failed.
+
+    Environment variables required:
+      PHASE1_RUN_URL         — e.g. http://phase1-service/phase1/run
+      PHASE2_RUN_URL         — e.g. http://phase2-service/phase2/run
+    """
+    from datetime import datetime, timezone
+
+    run_date = target_date or datetime.now(timezone.utc).date()
+    result = PipelineRunResult(
+        run_date=run_date,
+        phase1_ok=False,
+        phase2_ok=False,
+        phase3_ok=False,
+        is_zero_result=False,
+    )
+
+    # -- Phase 1: Ingestion -----------------------------------------------------
+    if not PHASE1_RUN_URL:
+        logger.warning("[/run] PHASE1_RUN_URL not configured — skipping Phase 1.")
+        result.phase1_error = "PHASE1_RUN_URL not configured."
+    else:
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                resp = await client.post(PHASE1_RUN_URL, json={"target_date": run_date.isoformat()})
+                resp.raise_for_status()
+                result.phase1_ok = True
+                logger.info("[/run] Phase 1 completed (HTTP %d).", resp.status_code)
+        except httpx.HTTPError as exc:
+            result.phase1_error = f"Phase 1 HTTP error: {exc}"
+            logger.error("[/run] Phase 1 failed: %s", exc)
+
+    # -- Phase 2: Summarization -------------------------------------------------
+    if not PHASE2_RUN_URL:
+        logger.warning("[/run] PHASE2_RUN_URL not configured — skipping Phase 2.")
+        result.phase2_error = "PHASE2_RUN_URL not configured."
+    else:
+        try:
+            async with httpx.AsyncClient(timeout=300.0) as client:  # LLM calls are slow
+                resp = await client.post(PHASE2_RUN_URL, json={"target_date": run_date.isoformat()})
+                resp.raise_for_status()
+                result.phase2_ok = True
+                logger.info("[/run] Phase 2 completed (HTTP %d).", resp.status_code)
+        except httpx.HTTPError as exc:
+            result.phase2_error = f"Phase 2 HTTP error: {exc}"
+            logger.error("[/run] Phase 2 failed: %s", exc)
+
+    # -- Phase 3: Digest compilation --------------------------------------------
+    # Runs regardless of Phase 1/2 outcome — always compile whatever is in the DB.
+    try:
+        rows = await fetch_digest_rows(run_date)
+        package = build_digest(rows, run_date)
+        result.phase3_ok = True
+        result.is_zero_result = package.is_zero_result
+        result.section_a_count = package.section_a_count
+        result.section_b_count = package.section_b_count
+        result.section_c_count = package.section_c_count
+        result.total_documents = package.total_documents
+        logger.info(
+            "[/run] Phase 3 digest built — A:%d B:%d C:%d (zero=%s).",
+            package.section_a_count,
+            package.section_b_count,
+            package.section_c_count,
+            package.is_zero_result,
+        )
+        # TODO Step 4: pass `package` to platform_handoff.send_digest(package)
+    except Exception as exc:
+        result.phase3_error = f"Phase 3 error: {exc}"
+        logger.exception("[/run] Phase 3 failed: %s", exc)
+
+    return result
+
+
+# ---------------------------------------------------------------------------
+# POST /phase3/digest/test  — DEV ONLY: compile email without running pipeline
 # ---------------------------------------------------------------------------
 
 @router.post(
-    "/digest/build",
+    "/digest/test",
     response_model=DigestPackage,
-    summary="Step 3: Compile the daily digest for a given date (default: today).",
+    summary="[Dev] Compile digest email for a date without running Phase 1 or 2.",
+    include_in_schema=True,
     responses={
-        200: {"description": "Digest compiled. is_zero_result=True means circuit-breaker fired."},
-        503: {"description": "Database error during digest compilation."},
+        200: {"description": "Digest compiled from existing DB rows. is_zero_result=True if none found."},
+        503: {"description": "Database or template rendering error."},
     },
 )
-async def build_digest_endpoint(
+async def build_digest_test(
     target_date: Optional[date] = Query(
         default=None,
-        description="Date to compile the digest for (ISO format YYYY-MM-DD). Defaults to today (UTC).",
+        description="Date to compile for (YYYY-MM-DD). Defaults to today (UTC).",
     ),
 ) -> DigestPackage:
     """
-    Step 3 — Digest Compilation.
+    DEV / TESTING ONLY — does NOT call Phase 1 or Phase 2.
 
-    Queries the database for all SUMMARY_GENERATED documents on `target_date`,
-    splits them into sections A / B / C by urgency, parses XML blobs into
-    LLM fields, builds static outbound links from DB columns, and renders
-    both HTML and plain-text email bodies.
+    Reads whatever SUMMARY_GENERATED rows are already in the database for
+    `target_date` and compiles the full dual-layer email package from them.
+    Use this to preview the email layout after inserting dummy data directly
+    into the database without needing to run the full pipeline.
 
-    If no documents are found, the circuit-breaker fires and the returned
-    DigestPackage has is_zero_result=True with a minimal confirmation body.
-
-    Step 4 (platform handoff / actual sending) is wired separately in
-    platform_handoff.py and will call this function internally.
-
-    Returns the full DigestPackage (html_body, text_body, section counts).
+    For the production cron-triggered flow, use POST /phase3/run instead.
     """
-    from datetime import datetime, timezone  # local import — only needed here
+    from datetime import datetime, timezone
 
     run_date = target_date or datetime.now(timezone.utc).date()
 

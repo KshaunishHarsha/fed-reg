@@ -129,30 +129,44 @@ CREATE TRIGGER trg_summaries_updated_at
 
 -- ============================================================
 -- PHASE 3 MORNING QUERY (reference — not executed here)
--- Run at 7:30 AM to compile the daily digest
+-- Run by POST /phase3/run (cron) to compile the daily digest.
+-- digest_query.py mirrors this exactly.
 -- ============================================================
 
 -- SELECT
 --     d.document_number,
 --     d.title,
 --     d.agency_names,
---     d.type,
+--     d.type,               -- drives section assignment (see below)
 --     d.regulation_category,
---     d.comments_close_on,
---     d.effective_on,
---     d.html_url,
---     d.comment_url,
+--     d.confidence,         -- NEEDS_CONFIRMATION → always Section C
+--     d.comments_close_on,  -- present + future → Section A urgency banner
+--     d.effective_on,       -- Section B effective date strip
+--     d.html_url,           -- used for federalregister.gov link (fallback)
+--     d.comment_url,        -- used for regulations.gov comment link
 --     d.publication_date,
---     s.xml_summary_blob
+--     s.xml_summary_blob    -- parsed by xml_parser.py for LLM fields
 -- FROM documents d
 -- INNER JOIN summaries s ON d.document_number = s.document_number
 -- WHERE d.pipeline_state = 'SUMMARY_GENERATED'
 --   AND d.publication_date = CURRENT_DATE
 -- ORDER BY
 --     CASE d.type
---         WHEN 'PRORULE' THEN 1   -- Section A: proposed rules with comment periods
+--         WHEN 'PRORULE' THEN 1   -- Section A: proposed rules (comment deadline prominent)
 --         WHEN 'RULE'    THEN 2   -- Section B: final rules
---         WHEN 'NOTICE'  THEN 3   -- Section B: notices
---         ELSE                4   -- Section C: anything else
+--         WHEN 'NOTICE'  THEN 3   -- Section B: informational notices
+--         ELSE                4   -- Section C: presidential docs + unrecognised
 --     END,
---     d.comments_close_on ASC NULLS LAST;
+--     d.comments_close_on ASC NULLS LAST;  -- soonest deadlines first within Section A
+
+-- Section assignment logic (applied in digest_builder.py):
+--   Section A: type='PRORULE' AND confidence='HIGH' AND comments_close_on >= TODAY
+--   Section B: type IN ('RULE','NOTICE') AND confidence='HIGH'
+--   Section C: confidence='NEEDS_CONFIRMATION' (any type)
+--              OR type='PRORULE' with expired comment window
+--              OR type not in (PRORULE, RULE, NOTICE)  [e.g. PRESDOC]
+
+-- Static outbound links built from DB columns (zero LLM):
+--   Source:  https://www.federalregister.gov/d/{document_number}
+--   Comment: https://www.regulations.gov/commentOn?D={comment_url}
+--            (if comment_url already starts with http, used as-is)

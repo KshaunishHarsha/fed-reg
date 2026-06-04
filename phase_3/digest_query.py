@@ -16,7 +16,7 @@ DIGEST_SENT via the existing persist_validated_document() in persistence.py.
 Schema columns used (read-only):
   documents : document_number, title, agency_names, type, regulation_category,
               confidence, comments_close_on, effective_on, html_url,
-              comment_url, publication_date, subtype
+              comment_url, publication_date
   summaries : xml_summary_blob
 """
 
