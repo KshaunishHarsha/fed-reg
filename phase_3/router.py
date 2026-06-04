@@ -15,6 +15,7 @@ Endpoints:
   POST /phase3/ingest                    - Receive Phase 2 payload, validate, persist (called by Phase 2)
   GET  /phase3/status/{document_number}  - Check pipeline_state for a document
   POST /phase3/digest/test               - [Dev] Compile email for a date without running the full pipeline
+  POST /phase3/mail/test                 - [Dev] Compile + send digest email to test_recipients.yaml
   POST /phase3/validate/test             - [Dev] Validate a raw XML blob in isolation
 """
 
@@ -501,3 +502,108 @@ async def validate_test(
     Useful for testing Phase 2 output before wiring up the full pipeline.
     """
     return validate_blob(document_number, xml_blob)
+
+
+# ---------------------------------------------------------------------------
+# POST /phase3/mail/test  — DEV ONLY: compile + send to test_recipients.yaml
+# ---------------------------------------------------------------------------
+
+class MailTestResult(BaseModel):
+    """Result returned by the test mail endpoint."""
+    sent: list
+    failed: list
+    total: int
+    subject: str
+    sent_at: str
+    digest_date: date
+    is_zero_result: bool
+
+
+@router.post(
+    "/mail/test",
+    response_model=MailTestResult,
+    summary="[Dev] Compile digest and send to addresses in test_recipients.yaml.",
+    include_in_schema=True,
+    responses={
+        200: {"description": "Emails dispatched. Check sent/failed lists in response."},
+        422: {"description": "SMTP not configured or no active recipients."},
+        503: {"description": "Database or render error."},
+    },
+)
+async def mail_test(
+    target_date: Optional[date] = Query(
+        default=None,
+        description="Date to compile the digest for (YYYY-MM-DD). Defaults to today (UTC).",
+    ),
+) -> MailTestResult:
+    """
+    DEV / TESTING ONLY — compiles today's digest from the database and sends
+    it via SMTP to every active address in phase_3/test_recipients.yaml.
+
+    Does NOT call Phase 1 or Phase 2. Uses whatever SUMMARY_GENERATED rows
+    are already in the database (same as POST /phase3/digest/test).
+
+    Required environment variables:
+      SMTP_HOST      - SMTP server (default: smtp.gmail.com)
+      SMTP_PORT      - SMTP port  (default: 465 for SSL)
+      SMTP_USER      - Your email address / SMTP login
+      SMTP_PASSWORD  - App password or SMTP password
+      SMTP_FROM      - Sender display string
+
+    Gmail tip: Use an App Password (not your account password).
+    See phase_3/mail_test.py for full setup instructions.
+    """
+    import asyncio
+    from datetime import datetime, timezone
+
+    from phase_3.mail_test import load_test_recipients, send_test_digest
+
+    run_date = target_date or datetime.now(timezone.utc).date()
+
+    # -- Build digest -----------------------------------------------------------
+    try:
+        rows = await fetch_digest_rows(run_date)
+        package = build_digest(rows, run_date)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Digest compilation error: {exc}",
+        )
+
+    # -- Load recipients --------------------------------------------------------
+    try:
+        recipients = load_test_recipients()
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        )
+
+    # -- Send via SMTP (blocking — run in thread pool so we don’t block the event loop)
+    try:
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None,
+            lambda: send_test_digest(
+                html_body=package.html_body,
+                text_body=package.text_body,
+                digest_date=package.digest_date,
+                recipients=recipients,
+            ),
+        )
+    except EnvironmentError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"SMTP error: {exc}",
+        )
+
+    return MailTestResult(
+        **result,
+        digest_date=package.digest_date,
+        is_zero_result=package.is_zero_result,
+    )

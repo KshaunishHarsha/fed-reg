@@ -27,6 +27,8 @@ fed-reg/
     ├── digest_query.py            ← async DB query: SUMMARY_GENERATED docs for a date
     ├── digest_builder.py          ← section A/B/C sort + Jinja2 email render
     ├── router.py                  ← FastAPI APIRouter mounted at /phase3/
+    ├── mail_test.py               ← [DEV ONLY] standalone SMTP testing mailer
+    ├── test_recipients.yaml       ← [DEV ONLY] list of test email addresses
     └── templates/
         ├── digest_email.html      ← rich dark-mode HTML email
         ├── digest_email.txt       ← plain-text fallback
@@ -175,6 +177,7 @@ All routes are mounted at the `/phase3/` prefix.
 | `POST` | `/phase3/ingest` | Receives `IngestPayload` from Phase 2, runs validation + retry loop, writes to DB | Production |
 | `GET` | `/phase3/status/{document_number}` | Returns current `pipeline_state` for a document | Admin |
 | `POST` | `/phase3/digest/test` | Compile email from existing DB rows without running Phase 1/2 (for dev testing) | Dev only |
+| `POST` | `/phase3/mail/test` | Compile email and send it via SMTP to addresses in `test_recipients.yaml` | Dev only |
 | `POST` | `/phase3/validate/test` | Validate a raw XML blob in isolation, no DB writes | Dev only |
 
 ---
@@ -261,9 +264,16 @@ All variables are read at startup. Copy `.env.example` in the repo root to `.env
 | `PHASE1_RUN_URL` | ✅ | Full URL of Phase 1's run endpoint — called by `POST /phase3/run` |
 | `PHASE2_RUN_URL` | ✅ | Full URL of Phase 2's run endpoint — called by `POST /phase3/run` |
 | `PHASE2_CORRECTION_URL` | ✅ | Full URL of Phase 2's correction endpoint — called by validation retry loop |
+| `SMTP_HOST` | *(Dev)* | SMTP host for the test mailer (default: `smtp.gmail.com`) |
+| `SMTP_PORT` | *(Dev)* | SMTP port for the test mailer (default: `465`) |
+| `SMTP_USER` | *(Dev)* | Login email for the test mailer |
+| `SMTP_PASSWORD` | *(Dev)* | App Password for the test mailer |
+| `SMTP_FROM` | *(Dev)* | Sender display string (e.g. `Open Paws <you@gmail.com>`) |
 
 > **Getting `DATABASE_URL`:** In Supabase → Settings → Database → Connection string → URI.
 > Change `postgresql://` to `postgresql+asyncpg://` before pasting it here.
+
+> **Test Mailer Setup:** For Gmail, use an App Password (not your normal password). See `mail_test.py` for instructions. Add your test addresses to `test_recipients.yaml`.
 
 ---
 

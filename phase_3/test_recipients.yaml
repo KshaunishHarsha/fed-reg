@@ -1,0 +1,36 @@
+# test_recipients.yaml
+# --------------------
+# Test email addresses for the Phase 3 development mailer.
+# Used by POST /phase3/mail/test and python -m phase_3.mail_test
+#
+# Two supported formats:
+#
+#   Simple (just an email string):
+#     - your@email.com
+#
+#   Dict (with display name and enabled toggle):
+#     - email: your@email.com
+#       name: Your Name
+#       enabled: true   # set to false to skip without deleting the entry
+#
+# IMPORTANT: This file is committed to the repo. Do NOT put any real
+# subscriber addresses here — only developer / team test addresses.
+# Add this path to .gitignore if the addresses must stay private.
+
+recipients:
+  - email: dev1@example.com
+    name: Developer One
+    enabled: true
+
+  - email: dev2@example.com
+    name: Developer Two
+    enabled: true
+
+  # Uncomment to add more addresses:
+  # - email: partner@example.com
+  #   name: Phase 2 Partner
+  #   enabled: true
+
+  # - email: stakeholder@openpaws.org
+  #   name: Project Lead
+  #   enabled: false   # disabled — flip to true to include in test sends
