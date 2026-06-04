@@ -1,0 +1,75 @@
+# Federal Register Sentinel — Keyword Configuration
+#
+# anchor_terms:  A single match immediately flags a document as HIGH confidence.
+#                Edit these when a major animal law statute or term is missing.
+#
+# context_terms: Each match scores +1 point. A document needs CONTEXT_THRESHOLD
+#                points (currently 2) to pass as NEEDS_CONFIRMATION.
+#                Edit these to broaden or narrow topical coverage.
+#
+# noise_title_keywords: Documents of type NOTICE whose title contains any of
+#                       these are discarded before keyword scoring.
+#                       Edit these to suppress persistent false-positive sources.
+
+anchor_terms:
+  - animal welfare act
+  - awa
+  - cites
+  - cafo
+  - endangered species act
+  - esa
+  - factory farming
+  - animal testing
+  - animal experimentation
+  - concentrated animal feeding operation
+  - migratory bird treaty
+  - marine mammal protection
+  - fur seal
+  - animal fighting
+  - horse protection act
+  - humane slaughter
+  - humane methods of slaughter
+  - animal enterprise
+  - great ape
+  - chimpanzee research
+
+context_terms:
+  - livestock
+  - poultry
+  - cattle
+  - swine
+  - equine
+  - bovine
+  - wildlife
+  - habitat
+  - captive
+  - slaughter
+  - trapping
+  - hunting
+  - fur
+  - aquaculture
+  - fishery
+  - marine species
+  - processing facility
+  - animal feed
+  - veterinary
+  - zoological
+  - primate
+  - rodent
+  - laboratory animal
+  - animal by-product
+  - game species
+  - trophy hunting
+  - import permit
+
+noise_title_keywords:
+  - airspace
+  - navigation
+  - flight path
+  - presidential determination
+  - advisory committee meeting
+  - agenda
+  - coast guard
+  - traffic separation
+  - vessel
+  - anchorage

@@ -1,3 +1,16 @@
+import os
+from pathlib import Path
+
+import yaml
+
+_keywords_path = Path(__file__).parent / "keywords.yaml"
+with open(_keywords_path) as f:
+    _kw = yaml.safe_load(f)
+
+ANCHOR_TERMS: list[str] = _kw["anchor_terms"]
+CONTEXT_TERMS: list[str] = _kw["context_terms"]
+NOISE_TITLE_KEYWORDS: list[str] = _kw["noise_title_keywords"]
+
 TARGET_AGENCY_SLUGS = [
     "agricultural-marketing-service",
     "animal-and-plant-health-inspection-service",
@@ -11,34 +24,7 @@ TARGET_AGENCY_SLUGS = [
 # Only these document types are fetched. PRESDOCU excluded entirely.
 TARGET_DOC_TYPES = ["RULE", "PRORULE", "NOTICE"]
 
-ANCHOR_TERMS = [
-    "animal welfare act", "awa", "cites", "cafo",
-    "endangered species act", "esa",
-    "factory farming", "animal testing", "animal experimentation",
-    "concentrated animal feeding operation",
-    "migratory bird treaty", "marine mammal protection",
-    "fur seal", "animal fighting", "horse protection act",
-    "humane slaughter", "humane methods of slaughter",
-    "animal enterprise", "great ape", "chimpanzee research",
-]
-
-CONTEXT_TERMS = [
-    "livestock", "poultry", "cattle", "swine", "equine", "bovine",
-    "wildlife", "habitat", "captive", "slaughter", "trapping",
-    "hunting", "fur", "aquaculture", "fishery", "marine species",
-    "processing facility", "animal feed", "veterinary", "zoological",
-    "primate", "rodent", "laboratory animal", "animal by-product",
-    "game species", "trophy hunting", "import permit",
-]
-
 CONTEXT_THRESHOLD = 2
-
-NOISE_TITLE_KEYWORDS = [
-    "airspace", "navigation", "flight path",
-    "presidential determination", "advisory committee meeting",
-    "agenda", "coast guard", "traffic separation",
-    "vessel", "anchorage",
-]
 
 AI_MODEL = "openai/gpt-4o-mini"
 AI_MAX_TOKENS = 500
