@@ -143,50 +143,75 @@ The Phase 2 prompt is responsible for ensuring the LLM encodes the following act
 
 ---
 
-## Full Envelope: What Arrives at Phase 3
+## Full Envelope: What Phase 2 Posts to Phase 3
 
-The LLM XML payload travels **inside** a larger Python dataclass / Pydantic model that carries the non-LLM factual fields alongside it. Phase 3 receives the full envelope:
+Phase 2 calls `POST /phase3/ingest` with a JSON body that matches the `IngestPayload` model
+defined in `phase_3/models.py`. This is the **source of truth** — Phase 2 must build
+a payload that deserializes into this structure without errors.
 
 ```python
-class SummarizedDocument(BaseModel):
-    # --- Metadata (fetched directly from Federal Register API — NOT from LLM) ---
-    document_number: str          # e.g. "2026-09841" — used as unique DB key
-    publication_date: date        # ISO date from API
-    document_type: str            # "Proposed Rule" | "Rule" | "Notice"
-    title: str                    # Official title from API
-    agency: str                   # e.g. "USDA", "FDA"
-    federal_register_url: str     # Direct source link — never from LLM
-    comment_deadline: Optional[date]  # Parsed from Phase 1 extraction
-    confidence_tier: str          # "high_confidence" | "confirmation_required"
+# phase_3/models.py — IngestPayload (do not modify; owned by Phase 3)
 
-    # --- LLM Output (parsed from XML above) ---
-    plain_language_summary: str
-    advocacy_relevance: str
-    suggested_actions: List[str]          # 1–3 items, ≤ 25 words each
-    suggested_talking_points: List[str]   # 1–3 items, ≤ 25 words each
-    disclaimer: str                       # Must equal hardcoded string exactly
+class DocumentRecord(BaseModel):
+    """
+    Metadata from the `documents` table. All values come from the Federal
+    Register API + Phase 1 extraction. Zero LLM-generated content here.
+    """
+    document_number:     str                   # e.g. "2026-09841" — PK in documents table
+    title:               str                   # official title from API
+    agency_names:        Optional[List[str]]   # e.g. ["USDA", "APHIS"]
+    type:                Optional[str]         # "RULE" | "PRORULE" | "NOTICE"
+    regulation_category: Optional[str]         # "Proposed Rule" | "Final Rule" | "Notice" | "Other"
+    comments_close_on:   Optional[date]        # public comment deadline (if applicable)
+    effective_on:        Optional[date]        # rule effective date (if applicable)
+    html_url:            Optional[str]         # Federal Register source URL
+    comment_url:         Optional[str]         # docket ID or regulations.gov URL
+    publication_date:    date                  # ISO date from API
+    confidence:          Optional[str]         # "HIGH" | "NEEDS_CONFIRMATION"
+    pipeline_state:      str = "SUMMARY_GENERATED"
+
+
+class IngestPayload(BaseModel):
+    """
+    Full envelope posted to POST /phase3/ingest by Phase 2.
+    Phase 3 parses xml_summary_blob → ValidatedSummary internally.
+    The raw blob is written to the `summaries` table as-is.
+    """
+    document_record:  DocumentRecord   # populated from the documents table row
+    xml_summary_blob: str              # exact XML string from Phase 2 LLM output
 ```
 
-Phase 3's validation step runs against `SummarizedDocument` as a whole — rejecting the envelope if either the metadata or the LLM fields are malformed.
+**Important:** Phase 2 does **not** need to post the parsed LLM fields as individual
+JSON keys. It posts `xml_summary_blob` as a raw XML string, exactly as the LLM returned
+it. Phase 3 handles the parsing internally via `xml_parser.py`.
 
 ---
 
 ## Validation Rules Phase 3 Enforces
 
-Before writing to the database, Phase 3 checks:
+Phase 3 parses `xml_summary_blob` and validates all fields before writing to the database.
+Failures on rules 1–6 are returned to Phase 2's correction endpoint as a structured
+`error_detail` string so the LLM can be re-prompted. Rule 7 failures are silently corrected.
 
-1. **`plain_language_summary`** — non-empty, ≤ 3 sentences (sentence count heuristic: split on `.!?`)
-2. **`advocacy_relevance`** — non-empty, ≤ 2 sentences
-3. **`suggested_actions`** — list length 1–3; each item ≤ 25 words
-4. **`suggested_talking_points`** — list length 1–3; each item ≤ 25 words
-5. **`disclaimer`** — exact string match to `"This summary is informational only and does not constitute legal advice."`
-6. **`comment_deadline`** — if present in metadata envelope, must also be referenced (as human-readable date) somewhere in `plain_language_summary` or `suggested_actions`
-7. **No URLs** — regex scan of all LLM fields; any `http://` or `https://` triggers automatic correction loop
+| # | Field | Rule | On Failure |
+|---|---|---|---|
+| 1 | `plain_language_summary` | Non-empty; ≤ 3 sentences | Bounce to Phase 2 correction |
+| 2 | `advocacy_relevance` | Non-empty; ≤ 2 sentences | Bounce to Phase 2 correction |
+| 3 | `suggested_actions` | 1–3 items; each ≤ 25 words | Bounce to Phase 2 correction |
+| 4 | `suggested_talking_points` | 1–3 items; each ≤ 25 words | Bounce to Phase 2 correction |
+| 5 | `disclaimer` | Must exactly equal `"This summary is informational only and does not constitute legal advice."` | Bounce to Phase 2 correction |
+| 6 | All LLM fields | No `http://` or `https://` URLs anywhere | URL stripped silently, event logged; **no bounce** |
 
-If validation fails on items 1–6, Phase 3 sends the failed summary back to the Phase 2 correction endpoint with the specific rule violation noted. If the URL check (item 7) fails, the URL is stripped silently and the event is logged.
+Phase 2 correction endpoint: `POST {PHASE2_CORRECTION_URL}` — Phase 3 sends the
+`error_detail` string back; Phase 2 is responsible for re-running the LLM with it as
+a system correction note. Maximum 2 correction cycles (3 total attempts).
 
 ---
 
 ## Why XML (Not JSON)?
 
-The project plan specifies Pydantic v2 + Instructor for structured output. The XML envelope is Phase 2's **prompt-level enforcement layer** — it prevents the model from free-forming its response and makes parsing deterministic with a single `ElementTree` pass. Instructor then maps the parsed XML into the `SummarizedDocument` Pydantic model for downstream use. The XML schema is the single source of truth for what the LLM may and may not produce.
+The project plan specifies Pydantic v2 + Instructor for structured output. The XML
+envelope is Phase 2's **prompt-level enforcement layer** — it prevents the model from
+free-forming its response and makes parsing deterministic with a single `ElementTree`
+pass. `xml_parser.py` in Phase 3 handles the parse. The XML schema above is the single
+source of truth for what the LLM may and may not produce.

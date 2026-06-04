@@ -12,19 +12,26 @@ This phase is intentionally isolated — it reads from a shared database table a
 
 ```
 fed-reg/
-├── phase_1/         ← teammate's work (ingestion + filtering)
-├── phase_2/         ← teammate's work (summarization + LLM)
+├── phase_1/         ← partner's work (ingestion + filtering)
+├── phase_2/         ← partner's work (summarization + LLM)
 └── phase_3/         ← this folder (post-processing + delivery)
     ├── README.md                  ← this file
-    ├── llm_output_contract.md     ← LLM output schema and field rules
-    ├── validator.py               ← quality review and correction loop
-    ├── persistence.py             ← database write + idempotency cache
-    ├── digest_builder.py          ← HTML + plain-text email assembly
-    ├── scheduler.py               ← APScheduler job (7:30 AM trigger)
-    ├── platform_handoff.py        ← Open Paws delivery bundle + webhook
+    ├── CLAUDE.md                  ← AI assistant context for Phase 3
+    ├── llm_output_contract.md     ← exact LLM output schema + Phase 2 integration spec
+    ├── __init__.py
+    ├── db.py                      ← SQLAlchemy async engine + session factory
+    ├── models.py                  ← Pydantic models: IngestPayload, DocumentRecord, ValidatedSummary
+    ├── validator.py               ← quality review + silent URL correction
+    ├── xml_parser.py              ← ElementTree parse of xml_summary_blob
+    ├── persistence.py             ← idempotent pipeline_state promotion
+    ├── digest_query.py            ← async DB query: SUMMARY_GENERATED docs for a date
+    ├── digest_builder.py          ← section A/B/C sort + Jinja2 email render
+    ├── router.py                  ← FastAPI APIRouter mounted at /phase3/
     └── templates/
-        ├── digest_email.html      ← Jinja2 HTML email template
-        └── digest_email.txt       ← Plain-text fallback template
+        ├── digest_email.html      ← rich dark-mode HTML email
+        ├── digest_email.txt       ← plain-text fallback
+        ├── zero_result.html       ← circuit-breaker HTML (no docs found)
+        └── zero_result.txt        ← circuit-breaker plain-text
 ```
 
 > **FastAPI context:** This entire repository is a FastAPI backend. Phase 3 registers its own APIRouter (mounted at `/phase3/`) so its endpoints (e.g. manual trigger, status check, webhook receiver) are reachable without touching other phases' routes.
@@ -160,50 +167,55 @@ An `INSERT ... ON CONFLICT DO NOTHING` upsert cannot express the concept of "alr
 
 ## FastAPI Routes (Phase 3 Router)
 
-| Method | Path | Purpose |
-|---|---|---|
-| `POST` | `/phase3/ingest` | Receives a `SummarizedDocument` from Phase 2, runs validation, writes to DB |
-| `GET` | `/phase3/status/{document_number}` | Returns cache status for a given document |
-| `POST` | `/phase3/digest/trigger` | Manually triggers the digest build (for testing / admin override) |
-| `GET` | `/phase3/digest/{date}` | Returns the compiled digest for a given date (for preview / audit) |
-| `POST` | `/phase3/webhook/unsubscribe` | Receives Open Paws unsubscribe webhook, updates subscription table |
+All routes are mounted at the `/phase3/` prefix.
+
+| Method | Path | Purpose | Type |
+|---|---|---|---|
+| `POST` | `/phase3/run` | **Cron entry point.** Calls Phase 1 → Phase 2 → compiles Phase 3 digest in sequence | Production |
+| `POST` | `/phase3/ingest` | Receives `IngestPayload` from Phase 2, runs validation + retry loop, writes to DB | Production |
+| `GET` | `/phase3/status/{document_number}` | Returns current `pipeline_state` for a document | Admin |
+| `POST` | `/phase3/digest/test` | Compile email from existing DB rows without running Phase 1/2 (for dev testing) | Dev only |
+| `POST` | `/phase3/validate/test` | Validate a raw XML blob in isolation, no DB writes | Dev only |
 
 ---
 
-## Database Tables (Phase 3's Responsibility)
+## Database (Phase 3's Relationship to the Schema)
 
-### `summarized_documents`
+Phase 3 does **not own** any tables. The full schema is defined in `phase_1/schema.sql`
+and run once in Supabase. Phase 3 reads and writes to two existing tables:
 
-| Column | Type | Notes |
+### `documents` (owned by Phase 1)
+
+Phase 3 reads these columns to build the digest:
+
+| Column | Type | Used for |
 |---|---|---|
-| `document_number` | `TEXT PRIMARY KEY` | Unique federal document ID — idempotency key |
-| `publication_date` | `DATE` | From Federal Register API |
-| `digest_date` | `DATE` | Date this document appears in the digest |
-| `document_type` | `TEXT` | `"Proposed Rule"` / `"Rule"` / `"Notice"` |
-| `title` | `TEXT` | Official title |
-| `agency` | `TEXT` | Agency name |
-| `federal_register_url` | `TEXT` | Source link |
-| `comment_deadline` | `DATE` | Nullable — present only if extracted in Phase 1 |
-| `confidence_tier` | `TEXT` | `"high_confidence"` or `"confirmation_required"` |
-| `status` | `TEXT` | `"approved"` or `"flagged"` |
-| `plain_language_summary` | `TEXT` | LLM output |
-| `advocacy_relevance` | `TEXT` | LLM output |
-| `suggested_actions` | `JSONB` | LLM output — list of strings |
-| `suggested_talking_points` | `JSONB` | LLM output — list of strings |
-| `disclaimer` | `TEXT` | Hardcoded value |
-| `created_at` | `TIMESTAMPTZ` | Row creation timestamp |
-| `validation_attempts` | `INT` | Number of correction loops before acceptance |
+| `document_number` | `TEXT PK` | Idempotency key; FK to summaries |
+| `title` | `TEXT` | Email entry heading |
+| `agency_names` | `TEXT[]` | Email entry agency line |
+| `type` | `TEXT` | Section assignment (`PRORULE`→A, `RULE`/`NOTICE`→B, other→C) |
+| `regulation_category` | `TEXT` | Section B label |
+| `confidence` | `TEXT` | `NEEDS_CONFIRMATION` forces Section C |
+| `comments_close_on` | `DATE` | Section A urgency banner + deadline display |
+| `effective_on` | `DATE` | Section B effective date strip |
+| `html_url` | `TEXT` | Fallback source link |
+| `comment_url` | `TEXT` | Regulations.gov comment portal link |
+| `publication_date` | `DATE` | Digest query filter |
+| `pipeline_state` | `TEXT` | Phase 3 reads `SUMMARY_GENERATED`; writes `DIGEST_SENT` |
 
-### `digest_log`
+Phase 3 **only writes** `pipeline_state → 'DIGEST_SENT'`. No other columns are touched.
 
-| Column | Type | Notes |
+### `summaries` (owned by Phase 2)
+
+| Column | Type | Used for |
 |---|---|---|
-| `id` | `UUID PRIMARY KEY` | Auto-generated |
-| `digest_date` | `DATE` | Date of digest run |
-| `document_count` | `INT` | Number of documents included |
-| `zero_result_day` | `BOOLEAN` | Whether circuit breaker fired |
-| `sent_at` | `TIMESTAMPTZ` | Timestamp of platform handoff |
-| `status` | `TEXT` | `"sent"` / `"failed"` / `"zero_result_sent"` |
+| `document_number` | `TEXT PK/FK` | Joins to `documents` |
+| `xml_summary_blob` | `TEXT` | LLM output parsed by `xml_parser.py` |
+
+Phase 3 reads `xml_summary_blob` but never writes to this table.
+
+> **No new tables. No new columns. No schema changes beyond what is in `phase_1/schema.sql`.**
+
 
 ---
 
@@ -238,13 +250,20 @@ These are Phase 3-specific additions. Shared project-level dependencies (OpenAI,
 
 ## Environment Variables (Phase 3)
 
-| Variable | Purpose |
-|---|---|
-| `DATABASE_URL` | Supabase / PostgreSQL connection string |
-| `OPEN_PAWS_API_URL` | Base URL of Open Paws platform email endpoint |
-| `OPEN_PAWS_API_KEY` | Auth key for platform handoff request |
-| `PHASE3_WEBHOOK_SECRET` | HMAC secret for verifying Open Paws webhook signatures |
-| `DIGEST_SEND_TIME` | Cron expression for APScheduler (default: `30 7 * * *`) |
+All variables are read at startup. Copy `.env.example` in the repo root to `.env` and fill in your values.
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `SUPABASE_URL` | ✅ | Supabase project REST URL (used by Phase 1/2) |
+| `SUPABASE_KEY` | ✅ | Supabase anon or service role key |
+| `DATABASE_URL` | ✅ | Supabase PostgreSQL connection string for Phase 3 SQLAlchemy (`postgresql+asyncpg://...`) |
+| `OPENROUTER_API_KEY` | ✅ | LLM API key (used by Phase 2; referenced here for completeness) |
+| `PHASE1_RUN_URL` | ✅ | Full URL of Phase 1's run endpoint — called by `POST /phase3/run` |
+| `PHASE2_RUN_URL` | ✅ | Full URL of Phase 2's run endpoint — called by `POST /phase3/run` |
+| `PHASE2_CORRECTION_URL` | ✅ | Full URL of Phase 2's correction endpoint — called by validation retry loop |
+
+> **Getting `DATABASE_URL`:** In Supabase → Settings → Database → Connection string → URI.
+> Change `postgresql://` to `postgresql+asyncpg://` before pasting it here.
 
 ---
 
