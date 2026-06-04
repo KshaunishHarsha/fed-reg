@@ -1,0 +1,152 @@
+================================================================================
+OPEN PAWS · FEDERAL REGISTER SENTINEL
+Daily Regulatory Digest — {{ digest_date.strftime('%A, %B %d, %Y') }}
+================================================================================
+
+Animal-relevant federal activity for your review.
+
+{{ section_a | length }} Action Required  |  {{ section_b | length }} Watchdog  |  {{ section_c | length }} Potential Matches
+Total documents: {{ total }}
+
+================================================================================
+{% if has_a %}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION A — ACTION REQUIRED
+Proposed rules with open public comment windows · Attorney review needed
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{% for entry in section_a %}
+
+[PROPOSED RULE]{% if entry.agency_names %} {{ entry.agency_names | join(' / ') }}{% endif %}
+
+{{ entry.title }}
+{% if entry.comments_close_on %}
+*** COMMENT DEADLINE: {{ entry.comments_close_on.strftime('%B %d, %Y') }} ***
+{% endif %}
+
+SUMMARY
+{{ entry.plain_language_summary }}
+
+ADVOCACY RELEVANCE
+{{ entry.advocacy_relevance }}
+{% if entry.suggested_actions %}
+
+SUGGESTED ACTIONS
+{% for action in entry.suggested_actions %}  › {{ action }}
+{% endfor %}
+{% endif %}
+{% if entry.suggested_talking_points %}
+
+TALKING POINTS
+{% for point in entry.suggested_talking_points %}  " {{ point }}
+{% endfor %}
+{% endif %}
+
+SOURCE:  {{ entry.source_url }}
+{% if entry.comment_portal_url %}COMMENT: {{ entry.comment_portal_url }}
+{% endif %}
+{{ entry.disclaimer }}
+
+--------------------------------------------------------------------------------
+{% endfor %}
+{% endif %}
+{% if has_b %}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION B — WATCHDOG MONITORING
+Final rules and informational notices · Litigation planning
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{% for entry in section_b %}
+
+[{{ (entry.regulation_category or 'DOCUMENT') | upper }}]{% if entry.agency_names %} {{ entry.agency_names | join(' / ') }}{% endif %}
+
+{{ entry.title }}
+{% if entry.effective_on %}
+Effective: {{ entry.effective_on.strftime('%B %d, %Y') }}
+{% endif %}
+
+SUMMARY
+{{ entry.plain_language_summary }}
+
+ADVOCACY RELEVANCE
+{{ entry.advocacy_relevance }}
+{% if entry.suggested_actions %}
+
+SUGGESTED ACTIONS
+{% for action in entry.suggested_actions %}  › {{ action }}
+{% endfor %}
+{% endif %}
+{% if entry.suggested_talking_points %}
+
+TALKING POINTS
+{% for point in entry.suggested_talking_points %}  " {{ point }}
+{% endfor %}
+{% endif %}
+
+SOURCE: {{ entry.source_url }}
+{% if entry.comment_portal_url %}DOCKET: {{ entry.comment_portal_url }}
+{% endif %}
+{{ entry.disclaimer }}
+
+--------------------------------------------------------------------------------
+{% endfor %}
+{% endif %}
+{% if has_c %}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION C — POTENTIAL MATCHES
+Borderline or unconfirmed relevance · Manual review recommended
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{% for entry in section_c %}
+
+{% if entry.is_needs_confirmation %}[⚠ UNVERIFIED RELEVANCE] {% endif %}[{{ (entry.regulation_category or 'DOCUMENT') | upper }}]{% if entry.agency_names %} {{ entry.agency_names | join(' / ') }}{% endif %}
+
+{{ entry.title }}
+
+SUMMARY
+{{ entry.plain_language_summary }}
+{% if entry.advocacy_relevance %}
+
+POTENTIAL ADVOCACY RELEVANCE
+{{ entry.advocacy_relevance }}
+{% endif %}
+{% if entry.suggested_actions %}
+
+SUGGESTED ACTIONS
+{% for action in entry.suggested_actions %}  › {{ action }}
+{% endfor %}
+{% endif %}
+
+SOURCE: {{ entry.source_url }}
+
+{{ entry.disclaimer }}
+
+--------------------------------------------------------------------------------
+{% endfor %}
+{% endif %}
+
+================================================================================
+LEGAL DISCLAIMER
+
+This digest is generated automatically for informational purposes only.
+All summaries are AI-generated and may not be complete or accurate. Nothing
+in this digest constitutes legal advice or formal legal analysis. Always
+verify information against the official Federal Register source before taking
+any action. ALDF attorneys and staff should independently review source
+documents for any matter requiring professional legal judgment.
+
+{{ disclaimer }}
+
+================================================================================
+OPEN PAWS · Animal Legal Defense Fund
+Federal Register Sentinel — Automated regulatory monitoring for animal advocates
+
+Digest generated {{ built_at.strftime('%Y-%m-%d %H:%M UTC') }}
+
+Federal Register:  https://www.federalregister.gov
+Regulations.gov:   https://www.regulations.gov
+
+You are receiving this because you are subscribed to the Open Paws Federal
+Register Sentinel. To manage your subscription, visit your Open Paws account
+settings.
+================================================================================

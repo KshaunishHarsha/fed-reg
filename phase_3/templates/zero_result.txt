@@ -1,0 +1,26 @@
+================================================================================
+OPEN PAWS · FEDERAL REGISTER SENTINEL
+Daily Regulatory Digest — {{ digest_date.strftime('%A, %B %d, %Y') }}
+================================================================================
+
+STATUS: NO ANIMAL-RELEVANT ACTIVITY TODAY
+
+The Federal Register Sentinel pipeline ran successfully on
+{{ digest_date.strftime('%B %d, %Y') }} and found no new federal regulatory
+documents matching animal welfare or related advocacy criteria for your
+monitored agencies.
+
+  ✓  Pipeline completed normally — this is a quiet regulatory day, not an error.
+  ✓  All monitored agencies were queried: USDA, FDA, NOAA, Fish & Wildlife, NIH.
+  ✓  No documents matched animal-relevance thresholds today.
+
+No action is required. You will receive the next digest tomorrow.
+
+================================================================================
+Federal Register:  https://www.federalregister.gov
+
+This message is generated automatically for informational purposes only.
+Nothing in this message constitutes legal advice.
+
+Open Paws · Animal Legal Defense Fund · Federal Register Sentinel
+================================================================================
