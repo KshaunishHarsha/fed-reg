@@ -31,8 +31,11 @@ _CONFIRM_SYSTEM = (
 
 
 def verify_document(doc: FilteredDocument) -> VerificationResult:
-    """Layer 3: classify document relevance and category using GPT-4o-mini."""
-    client = instructor.from_openai(openai.OpenAI(api_key=os.environ["OPENAI_API_KEY"]))
+    """Layer 3: classify document relevance and category via OpenRouter."""
+    client = instructor.from_openai(openai.OpenAI(
+        api_key=os.environ["OPENROUTER_API_KEY"],
+        base_url="https://openrouter.ai/api/v1",
+    ))
 
     system_prompt = _HIGH_SYSTEM if doc.confidence == "HIGH" else _CONFIRM_SYSTEM
     content = doc.abstract or doc.context_block or ""

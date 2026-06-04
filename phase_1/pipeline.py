@@ -8,9 +8,11 @@ from keyword_filter import apply_keyword_filter
 from models import ConfirmedDocument
 
 
-def run_pipeline(target_date=None) -> List[ConfirmedDocument]:
+def run_pipeline(target_date=None, dry_run: bool = False) -> List[ConfirmedDocument]:
     run_date = target_date or date.today()
     print(f"\n[Pipeline] Starting run for {run_date}")
+    if dry_run:
+        print("[Pipeline] DRY RUN — no AI calls or DB writes")
 
     # Layer 1
     raw_docs = fetch_documents(run_date)
@@ -23,6 +25,12 @@ def run_pipeline(target_date=None) -> List[ConfirmedDocument]:
         if result:
             filtered_docs.append(result)
     print(f"[Layer 2] {len(filtered_docs)} documents after keyword filter")
+
+    if dry_run:
+        print(f"\n[Dry Run] Would send {len(filtered_docs)} documents to Layer 3 (AI):")
+        for doc in filtered_docs:
+            print(f"  [{doc.confidence}] {doc.document_number} — {doc.title}")
+        return []
 
     # Layer 3
     confirmed_docs = []
@@ -69,12 +77,14 @@ def run_pipeline(target_date=None) -> List[ConfirmedDocument]:
 
 if __name__ == "__main__":
     import argparse
+    from pathlib import Path
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(Path(__file__).parent.parent / ".env")
 
     parser = argparse.ArgumentParser(description="Federal Register Sentinel — Phase 1 Pipeline")
     parser.add_argument("--date", type=str, help="Target date YYYY-MM-DD (default: today)")
+    parser.add_argument("--dry-run", action="store_true", help="Skip AI calls and DB writes; print what would be processed")
     args = parser.parse_args()
 
     target = date.fromisoformat(args.date) if args.date else None
-    run_pipeline(target)
+    run_pipeline(target, dry_run=args.dry_run)

@@ -40,7 +40,7 @@ NOISE_TITLE_KEYWORDS = [
     "vessel", "anchorage",
 ]
 
-AI_MODEL = "gpt-4o-mini"
+AI_MODEL = "openai/gpt-4o-mini"
 AI_MAX_TOKENS = 500
 
 PIPELINE_RUN_HOUR = 7

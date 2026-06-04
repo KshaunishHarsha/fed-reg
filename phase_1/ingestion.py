@@ -14,7 +14,6 @@ _FR_FIELDS = [
     "agency_names",
     "agencies",
     "publication_date",
-    "document_type",
     "type",
     "subtype",
     "page_length",
@@ -95,8 +94,11 @@ def _parse_published(item: dict, target_date: date) -> RawDocument | None:
 
 def _fetch_public_inspection(target_date: date) -> List[RawDocument]:
     """Fetch public inspection previews and filter client-side by agency slug and type."""
-    url = f"{config.FR_API_BASE}/public-inspection-issues/current.json"
+    url = f"{config.FR_API_BASE}/public-inspection-issues/{target_date.isoformat()}.json"
     resp = requests.get(url, timeout=30)
+    if resp.status_code == 404:
+        # No public inspection issue for this date (weekend, holiday, or future date)
+        return []
     resp.raise_for_status()
     data = resp.json()
 
