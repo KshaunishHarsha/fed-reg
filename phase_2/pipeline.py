@@ -1,8 +1,6 @@
-import os
 from pathlib import Path
-from typing import Optional
+from typing import Awaitable, Callable, Optional
 
-import httpx
 from dotenv import load_dotenv
 
 from database import (
@@ -21,12 +19,21 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 
 _MAX_CORRECTION_RETRIES = 2
 
+# Callback type: async fn(doc, xml_blob) -> None
+# Provided by the orchestrator; Phase 2 never imports Phase 3 directly.
+Phase3IngestFn = Callable[[DocumentRecord, str], Awaitable[None]]
+
 
 async def process_document(
     doc: DocumentRecord,
     correction_note: Optional[str] = None,
-) -> bool:
-    """Summarize one document and deliver it to Phase 3. Returns True on success."""
+    phase3_ingest_fn: Optional[Phase3IngestFn] = None,
+) -> Optional[str]:
+    """Summarize one document and (optionally) deliver it to Phase 3.
+
+    Returns the xml_blob string on success, None on failure.
+    The caller is responsible for Phase 3 delivery via phase3_ingest_fn.
+    """
     try:
         tier, prepared_text = route_and_prepare(doc)
         summary = summarize(doc, prepared_text, correction_note)
@@ -34,26 +41,30 @@ async def process_document(
 
         await save_summary(doc.document_number, xml_blob, tier, "complete")
         await update_pipeline_state(doc.document_number, "SUMMARY_GENERATED")
-        await _post_to_phase3(doc, xml_blob)
+
+        if phase3_ingest_fn is not None:
+            await phase3_ingest_fn(doc, xml_blob)
 
         print(f"[Phase2] ✓ {doc.document_number} — Tier {tier}")
-        return True
+        return xml_blob
 
     except Exception as exc:
         print(f"[Phase2] ✗ {doc.document_number} — {exc}")
         await update_pipeline_state(doc.document_number, "SUMMARIZATION_FAILED")
-        return False
+        return None
 
 
-async def run_pipeline() -> dict:
+async def run_pipeline(
+    phase3_ingest_fn: Optional[Phase3IngestFn] = None,
+) -> dict:
     """Process all INGESTED + is_relevant=true documents."""
     docs = await fetch_pending_documents()
     print(f"[Phase2] {len(docs)} documents to summarize")
 
     success, failed = 0, 0
     for doc in docs:
-        ok = await process_document(doc)
-        if ok:
+        result = await process_document(doc, phase3_ingest_fn=phase3_ingest_fn)
+        if result is not None:
             success += 1
         else:
             failed += 1
@@ -62,58 +73,26 @@ async def run_pipeline() -> dict:
     return {"processed": success, "failed": failed, "total": len(docs)}
 
 
-async def handle_correction(document_number: str, error_detail: str) -> bool:
+async def handle_correction(
+    document_number: str,
+    error_detail: str,
+    phase3_ingest_fn: Optional[Phase3IngestFn] = None,
+) -> Optional[str]:
     """Rerun the LLM for a document after Phase 3 validation failure.
-    Maximum _MAX_CORRECTION_RETRIES attempts. Marks as failed if exhausted.
+
+    Returns the new xml_blob on success, None if retries are exhausted.
     """
     attempts = await increment_correction_attempts(document_number)
 
     if attempts > _MAX_CORRECTION_RETRIES:
-        print(
-            f"[Phase2] {document_number} exceeded max correction retries "
-            f"({_MAX_CORRECTION_RETRIES}) — marking failed"
-        )
+        print(f"[Phase2] {document_number} exceeded max correction retries — marking failed")
         await save_summary(document_number, "", 0, "failed")
-        return False
+        return None
 
     doc = await fetch_document_by_number(document_number)
     if not doc:
         print(f"[Phase2] Correction requested for unknown document: {document_number}")
-        return False
+        return None
 
-    print(
-        f"[Phase2] Correction attempt {attempts}/{_MAX_CORRECTION_RETRIES} "
-        f"for {document_number}: {error_detail}"
-    )
-    return await process_document(doc, correction_note=error_detail)
-
-
-async def _post_to_phase3(doc: DocumentRecord, xml_blob: str) -> None:
-    """POST the validated summary to Phase 3's ingest endpoint."""
-    phase3_url = os.environ["PHASE3_INGEST_URL"]
-
-    payload = {
-        "document_record": {
-            "document_number": doc.document_number,
-            "title": doc.title,
-            "agency_names": doc.agency_names,
-            "type": doc.type,
-            "regulation_category": doc.regulation_category,
-            "confidence": doc.confidence,
-            "comments_close_on": (
-                doc.comments_close_on.isoformat() if doc.comments_close_on else None
-            ),
-            "effective_on": (
-                doc.effective_on.isoformat() if doc.effective_on else None
-            ),
-            "html_url": doc.html_url,
-            "comment_url": doc.comment_url,
-            "publication_date": doc.publication_date.isoformat(),
-            "pipeline_state": "SUMMARY_GENERATED",
-        },
-        "xml_summary_blob": xml_blob,
-    }
-
-    async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.post(phase3_url, json=payload)
-        resp.raise_for_status()
+    print(f"[Phase2] Correction {attempts}/{_MAX_CORRECTION_RETRIES} for {document_number}: {error_detail}")
+    return await process_document(doc, correction_note=error_detail, phase3_ingest_fn=phase3_ingest_fn)
