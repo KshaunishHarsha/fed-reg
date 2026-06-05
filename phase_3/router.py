@@ -660,3 +660,51 @@ async def mail_test(
         digest_date=package.digest_date,
         is_zero_result=package.is_zero_result,
     )
+
+
+# ---------------------------------------------------------------------------
+# Mailing list management — consumed by the Astro demo frontend
+# ---------------------------------------------------------------------------
+
+class SubscribeRequest(BaseModel):
+    email: str
+
+
+@router.get(
+    "/subscribers",
+    summary="List all active mailing list subscribers.",
+)
+async def list_subscribers() -> list:
+    """Returns [{email, created_at}, ...] for all enabled rows, newest last."""
+    from phase_3.mailing_list import get_active_subscribers
+    return await get_active_subscribers()
+
+
+@router.post(
+    "/subscribe",
+    summary="Add or re-enable an email on the mailing list.",
+    responses={
+        200: {"description": "Subscribed (or re-enabled if previously unsubscribed)."},
+        400: {"description": "Invalid email address."},
+    },
+)
+async def subscribe(request: SubscribeRequest) -> dict:
+    """Upserts the email with enabled=true. Safe to call repeatedly."""
+    import re
+    if not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", request.email):
+        raise HTTPException(status_code=400, detail="Invalid email address.")
+    from phase_3.mailing_list import add_subscriber
+    return await add_subscriber(request.email)
+
+
+@router.delete(
+    "/unsubscribe",
+    summary="Soft-delete an email from the mailing list.",
+    responses={
+        200: {"description": "disabled=true if found and disabled, disabled=false if not found."},
+    },
+)
+async def unsubscribe(request: SubscribeRequest) -> dict:
+    """Sets enabled=false. Address stays in the table but receives no future digests."""
+    from phase_3.mailing_list import disable_subscriber
+    return await disable_subscriber(request.email)

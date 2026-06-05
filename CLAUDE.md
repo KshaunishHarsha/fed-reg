@@ -198,7 +198,7 @@ POST /run  (main.py)               ← production cron entry point
                     → DigestPackage (html_body, text_body, section counts)
                     → phase_3.mailing_list.get_active_recipients()     [async, DB-backed]
                     → phase_3.mail_test.send_test_digest(recipients)   [SMTP]
-                      (falls back to test_recipients.yaml if DB list is empty)
+                    → if DEMO=true AND send succeeded: DELETE FROM documents (reset for re-run)
                     → TODO Step 4: platform_handoff.send_digest(package)
 ```
 
@@ -220,6 +220,9 @@ POST /run  (main.py)               ← production cron entry point
 | `POST /phase3/digest/test` | `phase_3/router.py` | Dev — compile digest from existing DB rows |
 | `POST /phase3/mail/test` | `phase_3/router.py` | Dev — compile + send via SMTP to `test_recipients.yaml` |
 | `POST /phase3/validate/test` | `phase_3/router.py` | Dev — validate a raw XML blob in isolation |
+| `GET /phase3/subscribers` | `phase_3/router.py` | Demo frontend — list active subscribers `[{email, created_at}]` |
+| `POST /phase3/subscribe` | `phase_3/router.py` | Demo frontend — add/re-enable email on mailing list |
+| `DELETE /phase3/unsubscribe` | `phase_3/router.py` | Demo frontend — soft-delete email (sets `enabled=false`) |
 
 ---
 
@@ -390,13 +393,26 @@ package = build_digest(rows, run_date)          # sync — no await
 from phase_3.mailing_list import add_subscriber, get_active_recipients
 await add_subscriber(email)                     # async, upsert — re-enables disabled rows
 recipients = await get_active_recipients()      # async — returns List[str] of enabled emails
+
+from phase_3.mailing_list import get_active_subscribers, disable_subscriber
+subs = await get_active_subscribers()           # async — returns List[{email, created_at}]
+await disable_subscriber(email)                 # async — sets enabled=false (soft delete)
 ```
 
 ### Mailing list — design notes
 - `mailing_list` table is the single source of truth for subscriber addresses. `test_recipients.yaml` is a dev-only fallback used only when the DB list is empty.
 - `add_subscriber` uses `ON CONFLICT (email) DO UPDATE SET enabled = true` — safe to call repeatedly (idempotent upsert).
-- `get_active_recipients` returns `[]` (not an error) when the table is empty — the orchestrator catches this and falls back to YAML.
+- `get_active_recipients` returns `[]` (not an error) when the table is empty — the orchestrator skips the email and DEMO cleanup when this happens.
+- `get_active_subscribers` returns full rows with `created_at` — used by the Astro frontend's live subscriber panel.
+- `disable_subscriber` soft-deletes: row stays in table, `enabled=false`. Re-subscribing via `add_subscriber` re-enables it.
 - The `name` column exists in the schema for future use (personalised salutation); the demo does not collect it.
+
+### DEMO mode cleanup — invariants
+- `DEMO=true` in `.env` enables post-send cleanup.
+- Cleanup runs inside the `send_test_digest()` success path — **never before the email is delivered**.
+- Zero-result (circuit-breaker) digests still trigger cleanup because `send_test_digest` renders the zero-result template and delivers it normally.
+- If there are no active subscribers, no email is sent and no cleanup runs — the documents stay in the DB.
+- Cleanup uses `DELETE FROM documents;` via Phase 3's SQLAlchemy session. `summaries` is cascade-deleted. `filter_audit` and `mailing_list` are untouched.
 
 ### Step 4 remaining
 `platform_handoff.py` — sends `DigestPackage` via Open Paws. The `# TODO Step 4` comment in `router.py` marks the exact integration point. Needs Open Paws API endpoint + key from project lead.

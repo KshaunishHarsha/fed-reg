@@ -140,7 +140,13 @@ async def run_full_pipeline(target_date: Optional[str] = None) -> dict:
             f"C:{package.section_c_count} (zero={package.is_zero_result})"
         )
         
-        # Send digest to mailing list subscribers
+        # Send digest to mailing list subscribers, then (if DEMO=true) reset DB
+        # so the same date can be re-run immediately without dedup blocking.
+        # Cleanup fires ONLY after send_test_digest() returns — guaranteeing that
+        # even the zero-result circuit-breaker email is delivered before the wipe.
+        import os
+        _demo = os.environ.get("DEMO", "").lower() == "true"
+
         try:
             from phase_3.mailing_list import get_active_recipients
             from phase_3.mail_test import send_test_digest
@@ -157,31 +163,30 @@ async def run_full_pipeline(target_date: Optional[str] = None) -> dict:
                     ),
                 )
                 print(f"[Orchestrator] Email sent to {result['sent']} (failed: {result['failed']})")
+
+                # DEMO cleanup — only reachable after a successful send
+                if _demo:
+                    try:
+                        from phase_3.db import get_session_factory
+                        from sqlalchemy import text as sa_text
+                        session_factory = get_session_factory()
+                        async with session_factory() as session:
+                            await session.execute(sa_text("DELETE FROM documents;"))
+                            await session.commit()
+                        print("[Orchestrator] DEMO cleanup — documents table cleared for next run.")
+                    except Exception as e:
+                        print(f"[Orchestrator] DEMO cleanup failed: {e}")
+
             else:
-                print("[Orchestrator] No active subscribers in mailing list — email skipped.")
+                print("[Orchestrator] No active subscribers — email skipped, DEMO cleanup skipped.")
         except Exception as e:
             print(f"[Orchestrator] Failed to send email: {e}")
-            
+
         # TODO Step 4: platform_handoff.send_digest(package)
         digest_built = True
 
     except ImportError as exc:
         print(f"[Orchestrator] Phase 3 digest skipped (not yet available): {exc}")
-
-    # --- DEMO DATA CLEANUP ---
-    import os
-    if os.environ.get("DEMO", "").lower() == "true":
-        try:
-            print("[Orchestrator] DEMO=true detected. Executing DEMO-only cleanup: DELETE FROM documents;")
-            from phase_3.db import get_session_factory
-            from sqlalchemy import text
-            session_factory = get_session_factory()
-            async with session_factory() as session:
-                await session.execute(text("DELETE FROM documents;"))
-                await session.commit()
-            print("[Orchestrator] DEMO cleanup successful.")
-        except Exception as e:
-            print(f"[Orchestrator] DEMO cleanup failed: {e}")
 
     return {
         "run_date": run_date.isoformat(),
