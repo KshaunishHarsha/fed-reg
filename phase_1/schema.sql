@@ -105,6 +105,20 @@ CREATE TRIGGER trg_summaries_updated_at
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 
+-- TABLE 4: mailing_list
+-- Subscriber addresses for the daily digest email.
+-- Decoupled from test_recipients.yaml — this is the production list.
+CREATE TABLE mailing_list (
+    id          BIGSERIAL PRIMARY KEY,
+    email       TEXT NOT NULL UNIQUE,
+    name        TEXT,
+    enabled     BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX idx_mailing_list_enabled ON mailing_list (enabled) WHERE enabled = true;
+
+
 -- ============================================================
 -- PHASE 3 MORNING QUERY (reference)
 -- ============================================================

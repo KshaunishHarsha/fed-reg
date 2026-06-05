@@ -5,19 +5,27 @@ Single process, single port (8000). All phases run in-process.
 No HTTP calls between Phase 1, 2, and 3.
 
 Endpoints:
+  GET  /                      ← demo frontend
+  POST /demo/run              ← demo: subscribe email + trigger full pipeline
   POST /run                   ← daily cron entry point (Phase 1 → 2 → 3)
   POST /phase2/run            ← trigger Phase 2 alone (standalone use)
   POST /phase2/correct        ← Phase 3 correction hook
   + all Phase 3 endpoints     ← status, digest test, validate test, etc.
 """
 
+import re
 from pathlib import Path
 
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
 
 load_dotenv(Path(__file__).parent / ".env")
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+_FRONTEND = Path(__file__).parent / "frontend" / "index.html"
 
 app = FastAPI(
     title="Federal Register Sentinel",
@@ -42,6 +50,35 @@ except ImportError:
 
 
 # ── Root orchestration endpoint ───────────────────────────────────────────────
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def frontend():
+    """Serve the demo frontend."""
+    return HTMLResponse(_FRONTEND.read_text(encoding="utf-8"))
+
+
+class DemoRequest(BaseModel):
+    email: str
+
+
+@app.post("/demo/run")
+async def demo_run(request: DemoRequest, background_tasks: BackgroundTasks):
+    """
+    Demo entry point: subscribe an email address and trigger the full pipeline.
+    The pipeline runs in the background — the response is returned immediately.
+    In production this endpoint does not exist; the pipeline is triggered by a
+    scheduled cron job once per day.
+    """
+    from orchestrator import run_full_pipeline
+    from phase_3.mailing_list import add_subscriber
+
+    if not _EMAIL_RE.match(request.email):
+        raise HTTPException(status_code=400, detail="Invalid email address.")
+
+    await add_subscriber(request.email)
+    background_tasks.add_task(run_full_pipeline)
+    return {"subscribed": request.email, "pipeline_started": True}
+
 
 @app.post("/run")
 async def run(date: str = None):

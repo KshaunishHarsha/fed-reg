@@ -61,6 +61,9 @@ fed-reg/
 ├── brief.md                # Project brief — gitignored
 ├── project-plan.md         # Phase 2 build plan — gitignored
 │
+├── frontend/               # Demo UI (served by FastAPI at GET /)
+│   └── index.html          # Self-contained single-page demo — no build step
+│
 ├── phase_1/                # Ingestion + filtering
 │   ├── config.py           # All constants: agency slugs, keywords, thresholds, model
 │   ├── models.py           # RawDocument → FilteredDocument → ConfirmedDocument
@@ -92,9 +95,10 @@ fed-reg/
     ├── xml_parser.py       # ElementTree parse of xml_summary_blob
     ├── persistence.py      # persist_validated_document(doc_number) — async, idempotent
     ├── db.py               # SQLAlchemy async engine + session factory
+    ├── mailing_list.py     # add_subscriber(), get_active_recipients() — async, DB-backed
     ├── digest_query.py     # fetch_digest_rows(run_date) — async
     ├── digest_builder.py   # build_digest(rows, run_date) → DigestPackage — sync
-    ├── mail_test.py        # SMTP send to test_recipients.yaml
+    ├── mail_test.py        # SMTP send; falls back to test_recipients.yaml when DB list is empty
     ├── platform_handoff.py # Step 4 — not yet implemented
     ├── llm_output_contract.md
     ├── schemas.md
@@ -140,6 +144,7 @@ Authoritative schema: **`phase_1/schema.sql`** — run once in Supabase SQL Edit
 | `documents` | Phase 1 creates; Phase 2 + 3 update `pipeline_state` | One row per FR document. PK: `document_number`. |
 | `summaries` | Phase 2 | `xml_summary_blob`, `summarization_tier`, `summarization_status`, `correction_attempts`. FK → `documents`. |
 | `filter_audit` | Phase 1 | Every Layer 3 AI decision logged here. No FK to documents (logs dropped docs too). |
+| `mailing_list` | `phase_3/mailing_list.py` via `POST /demo/run` | Subscriber emails for the daily digest. PK: `id`. `email` is UNIQUE. `enabled` flag. |
 
 **`pipeline_state` lifecycle:**
 
@@ -161,7 +166,14 @@ Phase 1 owns all writes to `documents` (except `pipeline_state`). Phase 2 owns a
 **One process. One port (8000). All inter-phase calls are direct Python function calls — no HTTP between phases.**
 
 ```
-POST /run  (main.py)
+GET /  (main.py)
+    └── Serves frontend/index.html (demo UI)
+
+POST /demo/run  (main.py)          ← demo only; not in production
+    ├── phase_3.mailing_list.add_subscriber(email)   [upsert to DB]
+    └── BackgroundTask: orchestrator.run_full_pipeline()
+
+POST /run  (main.py)               ← production cron entry point
     └── orchestrator.run_full_pipeline(target_date)
             │
             ├─ Phase 1: phase_1.pipeline.run_pipeline(run_date)
@@ -184,6 +196,9 @@ POST /run  (main.py)
                     phase_3.digest_query.fetch_digest_rows(run_date)   [async]
                     phase_3.digest_builder.build_digest(rows, run_date) [sync]
                     → DigestPackage (html_body, text_body, section counts)
+                    → phase_3.mailing_list.get_active_recipients()     [async, DB-backed]
+                    → phase_3.mail_test.send_test_digest(recipients)   [SMTP]
+                      (falls back to test_recipients.yaml if DB list is empty)
                     → TODO Step 4: platform_handoff.send_digest(package)
 ```
 
@@ -193,6 +208,8 @@ POST /run  (main.py)
 
 | Endpoint | Source | Purpose |
 |----------|--------|---------|
+| `GET /` | `main.py` | Demo frontend (served from `frontend/index.html`) |
+| `POST /demo/run` | `main.py` | **Demo only.** Subscribe email + trigger pipeline as background task. |
 | `POST /run?date=YYYY-MM-DD` | `main.py` → `orchestrator.py` | **Primary cron entry point.** Full Phase 1→2→3 in-process. |
 | `GET /health` | `main.py` | Liveness check |
 | `POST /phase2/run` | `phase_2/api.py` | Phase 2 standalone — no Phase 3 callback |
@@ -211,6 +228,8 @@ POST /run  (main.py)
 | Component | Status | Notes |
 |-----------|--------|-------|
 | `main.py` + `orchestrator.py` | ✅ Complete | Unified app, direct in-process phase calls |
+| **Frontend** — Demo UI | ✅ Complete | `frontend/index.html` served at `GET /`; `POST /demo/run` handles subscribe + pipeline trigger |
+| **Mailing list** — DB-backed subscribers | ✅ Complete | `mailing_list` Supabase table; `phase_3/mailing_list.py`; orchestrator reads from DB, falls back to YAML |
 | **Phase 1** — Ingestion + Filtering | ✅ Complete | 43 tests passing |
 | **Phase 2** — LLM Summarization | ✅ Complete | 69 tests passing |
 | **Phase 3** — Validation, Digest, Email | ✅ Steps 1–3 complete | Step 4 (`platform_handoff.py`) not yet implemented |
@@ -367,7 +386,17 @@ rows = await fetch_digest_rows(run_date)        # async
 from phase_3.digest_builder import build_digest
 package = build_digest(rows, run_date)          # sync — no await
 # package.html_body, package.text_body, package.section_a/b/c_count, package.is_zero_result
+
+from phase_3.mailing_list import add_subscriber, get_active_recipients
+await add_subscriber(email)                     # async, upsert — re-enables disabled rows
+recipients = await get_active_recipients()      # async — returns List[str] of enabled emails
 ```
+
+### Mailing list — design notes
+- `mailing_list` table is the single source of truth for subscriber addresses. `test_recipients.yaml` is a dev-only fallback used only when the DB list is empty.
+- `add_subscriber` uses `ON CONFLICT (email) DO UPDATE SET enabled = true` — safe to call repeatedly (idempotent upsert).
+- `get_active_recipients` returns `[]` (not an error) when the table is empty — the orchestrator catches this and falls back to YAML.
+- The `name` column exists in the schema for future use (personalised salutation); the demo does not collect it.
 
 ### Step 4 remaining
 `platform_handoff.py` — sends `DigestPackage` via Open Paws. The `# TODO Step 4` comment in `router.py` marks the exact integration point. Needs Open Paws API endpoint + key from project lead.

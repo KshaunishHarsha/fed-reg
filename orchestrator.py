@@ -146,10 +146,15 @@ async def run_full_pipeline(target_date: Optional[str] = None) -> dict:
                 f"C:{package.section_c_count} (zero={package.is_zero_result})"
             )
             
-            # Temporary dev hook: Automatically send the test digest email
+            # Send digest to mailing list subscribers (falls back to YAML for dev)
             try:
-                from phase_3.mail_test import load_test_recipients, send_test_digest
-                recipients = load_test_recipients()
+                from phase_3.mail_test import send_test_digest
+                from phase_3.mailing_list import get_active_recipients
+                recipients = await get_active_recipients()
+                if not recipients:
+                    # Dev fallback: YAML test recipients when DB list is empty
+                    from phase_3.mail_test import load_test_recipients
+                    recipients = load_test_recipients()
                 loop = asyncio.get_event_loop()
                 result = await loop.run_in_executor(
                     _executor,
@@ -160,9 +165,9 @@ async def run_full_pipeline(target_date: Optional[str] = None) -> dict:
                         recipients=recipients,
                     ),
                 )
-                print(f"[Orchestrator] Test email sent to {result['sent']} (failed: {result['failed']})")
+                print(f"[Orchestrator] Digest sent to {result['sent']} (failed: {result['failed']})")
             except Exception as e:
-                print(f"[Orchestrator] Failed to send test email: {e}")
+                print(f"[Orchestrator] Failed to send digest email: {e}")
                 
             # TODO Step 4: platform_handoff.send_digest(package)
             digest_built = True
