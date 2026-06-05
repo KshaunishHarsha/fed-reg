@@ -21,42 +21,55 @@ import Layout from '../layouts/Layout.astro';
   <!-- SUBSCRIBE + LIST -->
   <section class="two-col">
 
+    <!-- Left: subscribe form + run button -->
     <div class="panel">
       <p class="panel-label">Subscribe</p>
       <p class="panel-sub">Receive the daily digest when animal-relevant regulations are published.</p>
+
       <form id="form" novalidate>
-        <div class="row">
-          <label for="email" class="sr-only">Email address</label>
-          <input id="email" type="email" placeholder="you@aldf.org" autocomplete="email" required />
-          <button type="submit" id="btn">
-            <span id="btn-text">Subscribe</span>
-            <span id="btn-spin" hidden class="spin"></span>
-          </button>
-        </div>
-        <p id="status" role="alert" aria-live="polite"></p>
+        <label for="email" class="sr-only">Email address</label>
+        <input id="email" type="email" placeholder="you@aldf.org" autocomplete="email" required />
+        <button type="submit" id="sub-btn" class="btn btn-teal">Subscribe</button>
+        <p id="sub-status" class="status-msg" role="alert" aria-live="polite"></p>
       </form>
+
+      <div class="divider"></div>
+
+      <p class="panel-label">Run pipeline</p>
+      <p class="panel-sub">Fetch today's Federal Register, filter, summarise, and send the digest to all subscribers.</p>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <input type="date" id="run-date" class="date-input" />
+        <button id="run-btn" class="btn btn-outline">Send digest</button>
+      </div>
+      <p id="run-status" class="status-msg" role="alert" aria-live="polite"></p>
     </div>
 
+    <!-- Right: live subscriber list -->
     <div class="panel">
-      <div class="panel-top">
-        <p class="panel-label">Active subscribers</p>
-        <span class="dev-tag">Only visible in this demo — hidden in production</span>
-        <button id="refresh" class="refresh-btn" aria-label="Refresh">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      <div class="list-header">
+        <div>
+          <p class="panel-label">Active subscribers</p>
+          <p class="demo-note">Only visible in this demo — hidden in production</p>
+        </div>
+        <button id="refresh" class="icon-btn" aria-label="Refresh list">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         </button>
       </div>
-      <div id="list" class="list-body">
-        <div class="dots"><span></span><span></span><span></span></div>
+
+      <div id="list" class="sub-list">
+        <div class="loading-dots"><span></span><span></span><span></span></div>
       </div>
-      <p id="count" class="count"></p>
+      <p id="count" class="sub-count"></p>
     </div>
 
   </section>
 
   <!-- PIPELINE -->
   <section class="pipeline-section">
-    <p class="kicker">How it works</p>
-    <h2>Three phases. Zero manual steps.</h2>
+    <div class="pipeline-header">
+      <p class="kicker">How it works</p>
+      <h2>Three phases. Zero manual steps.</h2>
+    </div>
 
     <div class="pipeline">
       <div class="step">
@@ -108,6 +121,7 @@ import Layout from '../layouts/Layout.astro';
     --soft:   #f7f7f7;
     --text:   #111;
     --muted:  #666;
+    --coral:  #FF8552;
   }
   .sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0); }
 
@@ -152,7 +166,7 @@ import Layout from '../layouts/Layout.astro';
     color: var(--grey);
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
   h1 {
     font-family: 'DM Serif Display', serif;
@@ -177,6 +191,7 @@ import Layout from '../layouts/Layout.astro';
     grid-template-columns: 1fr 1fr;
     gap: 16px;
     margin-bottom: 48px;
+    align-items: start;
   }
   @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
 
@@ -190,19 +205,45 @@ import Layout from '../layouts/Layout.astro';
     font-size: 13px;
     font-weight: 600;
     color: var(--black);
-    margin-bottom: 6px;
+    margin-bottom: 4px;
   }
   .panel-sub {
     font-size: 13px;
     color: var(--muted);
-    margin-bottom: 18px;
+    margin-bottom: 14px;
     line-height: 1.55;
   }
 
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 18px;
+    border-radius: 7px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.15s, background 0.15s;
+    white-space: nowrap;
+  }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-teal  { background: var(--teal); color: #fff; }
+  .btn-teal:hover:not(:disabled) { opacity: 0.85; }
+  .btn-outline {
+    background: var(--white);
+    color: var(--black);
+    border: 1px solid var(--border);
+  }
+  .btn-outline:hover:not(:disabled) { border-color: #aaa; background: var(--soft); }
+  .btn-outline.loading { color: var(--grey); }
+
   /* Form */
-  .row { display: flex; gap: 8px; margin-bottom: 8px; }
+  #form { margin-bottom: 0; }
   input[type="email"] {
-    flex: 1;
+    width: 100%;
     padding: 9px 13px;
     border: 1px solid var(--border);
     border-radius: 7px;
@@ -212,85 +253,102 @@ import Layout from '../layouts/Layout.astro';
     background: var(--white);
     outline: none;
     transition: border-color 0.15s;
+    margin-bottom: 10px;
+    display: block;
   }
   input[type="email"]::placeholder { color: #c0c0c0; }
   input[type="email"]:focus { border-color: var(--teal); }
 
-  button[type="submit"] {
-    padding: 9px 18px;
-    background: var(--teal);
-    border: none;
+  .date-input {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
     border-radius: 7px;
-    color: #fff;
     font-family: 'Space Grotesk', sans-serif;
     font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
-    transition: opacity 0.15s;
+    color: var(--black);
+    background: var(--white);
+    outline: none;
+    transition: border-color 0.15s;
   }
-  button[type="submit"]:hover { opacity: 0.85; }
-  button[type="submit"]:disabled { opacity: 0.5; cursor: not-allowed; }
+  .date-input:focus { border-color: var(--teal); }
 
+  .status-msg {
+    font-size: 12px;
+    min-height: 18px;
+    color: var(--grey);
+    margin-top: 8px;
+    line-height: 1.4;
+  }
+  .status-msg.ok  { color: var(--teal); }
+  .status-msg.err { color: #c0392b; }
+  .status-msg.info { color: var(--grey); }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 20px 0;
+  }
+
+  /* Spinner inside button */
   .spin {
     width: 12px; height: 12px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: #fff;
+    border: 2px solid rgba(0,0,0,0.15);
+    border-top-color: currentColor;
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
-    display: inline-block;
+    flex-shrink: 0;
   }
+  .btn-teal .spin { border-color: rgba(255,255,255,0.3); border-top-color: #fff; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  #status {
-    font-size: 12px;
-    min-height: 16px;
-    color: var(--grey);
-  }
-  #status.ok  { color: var(--teal); }
-  #status.err { color: #c0392b; }
-
-  /* Subscriber panel */
-  .panel-top {
+  /* ── Subscriber list panel ────────────────────── */
+  .list-header {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 14px;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
   }
-  .panel-top .panel-label { margin-bottom: 0; flex: 1; }
-  .dev-tag {
+  .list-header .panel-label { margin-bottom: 2px; }
+  .demo-note {
     font-family: 'JetBrains Mono', monospace;
     font-size: 9px;
-    letter-spacing: 0.06em;
-    color: #FF8552;
-    border: 1px solid rgba(255,133,82,0.25);
-    padding: 3px 8px;
+    letter-spacing: 0.05em;
+    color: var(--coral);
+    background: rgba(255,133,82,0.07);
+    border: 1px solid rgba(255,133,82,0.2);
     border-radius: 3px;
-    background: rgba(255,133,82,0.06);
-    white-space: nowrap;
+    padding: 2px 7px;
+    display: inline-block;
+    margin-top: 4px;
   }
-  .refresh-btn {
+  .icon-btn {
+    flex-shrink: 0;
     background: none;
     border: 1px solid var(--border);
     border-radius: 6px;
     color: var(--grey);
-    padding: 5px 7px;
+    padding: 6px 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
     transition: all 0.15s;
+    margin-top: 2px;
   }
-  .refresh-btn:hover { border-color: var(--teal); color: var(--teal); }
+  .icon-btn:hover { border-color: var(--teal); color: var(--teal); }
 
-  .list-body { max-height: 150px; overflow-y: auto; }
+  .sub-list {
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    overflow: hidden;
+    min-height: 60px;
+  }
   .sub-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
     align-items: center;
-    justify-content: space-between;
-    padding: 7px 0;
+    gap: 8px;
+    padding: 9px 12px;
     border-bottom: 1px solid var(--border);
     animation: fadeIn 0.2s ease;
   }
@@ -299,56 +357,65 @@ import Layout from '../layouts/Layout.astro';
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
     color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .sub-date {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    color: #c8c8c8;
+    font-size: 10px;
+    color: #bbb;
+    white-space: nowrap;
   }
   .rm {
     background: none;
     border: none;
     cursor: pointer;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
+    font-size: 10px;
     color: #ccc;
-    padding: 2px 6px;
+    padding: 3px 7px;
     border-radius: 4px;
     transition: all 0.15s;
     line-height: 1;
   }
   .rm:hover { color: #c0392b; background: #fff0ee; }
 
-  .empty {
+  .sub-empty {
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
     color: #ccc;
-    padding: 14px 0;
+    padding: 16px;
     text-align: center;
   }
-  .count {
+  .sub-count {
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
-    color: #c8c8c8;
-    margin-top: 12px;
+    color: #bbb;
+    margin-top: 10px;
   }
 
-  .dots { display: flex; gap: 5px; justify-content: center; padding: 18px 0; }
-  .dots span {
+  .loading-dots { display: flex; gap: 5px; justify-content: center; padding: 20px; }
+  .loading-dots span {
     width: 5px; height: 5px;
     background: #e0e0e0;
     border-radius: 50%;
     animation: bounce 1.2s ease-in-out infinite;
   }
-  .dots span:nth-child(2) { animation-delay: 0.2s; }
-  .dots span:nth-child(3) { animation-delay: 0.4s; }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
   @keyframes bounce { 0%,80%,100% { transform: scale(0.5); opacity: 0.3; } 40% { transform: scale(1); opacity: 1; } }
   @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
 
   /* ── Pipeline ────────────────────────────────── */
   .pipeline-section {
-    padding-top: 40px;
+    padding-top: 44px;
     border-top: 1px solid var(--border);
+  }
+  .pipeline-header {
+    text-align: center;
+    margin-bottom: 28px;
   }
   h2 {
     font-family: 'DM Serif Display', serif;
@@ -356,12 +423,11 @@ import Layout from '../layouts/Layout.astro';
     font-weight: 400;
     color: var(--black);
     letter-spacing: -0.015em;
-    margin-bottom: 28px;
     line-height: 1.2;
   }
   .pipeline {
     display: grid;
-    grid-template-columns: 1fr 24px 1fr 24px 1fr;
+    grid-template-columns: 1fr 28px 1fr 28px 1fr;
     align-items: start;
     margin-bottom: 20px;
   }
@@ -374,12 +440,13 @@ import Layout from '../layouts/Layout.astro';
     border-radius: 8px;
     padding: 20px 18px;
     background: var(--white);
+    text-align: center;
   }
   .step-num {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
+    font-size: 10px;
     color: var(--grey);
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     margin-bottom: 8px;
   }
   .step-title {
@@ -392,18 +459,24 @@ import Layout from '../layouts/Layout.astro';
     font-size: 13px;
     color: var(--muted);
     line-height: 1.6;
+    text-align: left;
   }
   .arrow {
     display: flex;
     align-items: flex-start;
-    padding-top: 28px;
+    padding-top: 26px;
     justify-content: center;
     color: #d0d0d0;
     font-size: 16px;
   }
 
   /* Chips */
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+  }
   .chip {
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
@@ -435,94 +508,140 @@ import Layout from '../layouts/Layout.astro';
 </style>
 
 <script>
-  // Relative URLs — proxied by Astro dev server in dev, same-origin in production
   const API = '';
 
+  // ── Load subscriber list ──────────────────────
   async function loadSubs() {
     const list  = document.getElementById('list');
     const count = document.getElementById('count');
     try {
       const res  = await fetch(`${API}/phase3/subscribers`);
+      if (!res.ok) throw new Error();
       const data = await res.json();
-      if (!data.length) {
-        list.innerHTML  = '<div class="empty">No subscribers yet.</div>';
+      if (!Array.isArray(data) || data.length === 0) {
+        list.innerHTML    = '<div class="sub-empty">No subscribers yet.</div>';
         count.textContent = '';
       } else {
         list.innerHTML = data.map(s => `
           <div class="sub-row">
-            <div>
-              <div class="sub-email">${esc(s.email)}</div>
-              <div class="sub-date">${s.created_at ? new Date(s.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''}</div>
-            </div>
-            <button class="rm" data-email="${encodeURIComponent(s.email)}" title="Remove">remove</button>
+            <div class="sub-email" title="${esc(s.email)}">${esc(s.email)}</div>
+            <div class="sub-date">${s.created_at ? new Date(s.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''}</div>
+            <button class="rm" data-email="${encodeURIComponent(s.email)}" aria-label="Remove ${esc(s.email)}">remove</button>
           </div>`).join('');
-        count.textContent = `${data.length} active`;
+        count.textContent = `${data.length} active subscriber${data.length === 1 ? '' : 's'}`;
       }
     } catch {
-      list.innerHTML = '<div class="empty">Cannot reach server.</div>';
+      list.innerHTML = '<div class="sub-empty">Cannot reach server.</div>';
     }
   }
 
+  // ── Subscribe form ────────────────────────────
   document.getElementById('form').addEventListener('submit', async e => {
     e.preventDefault();
     const input  = document.getElementById('email');
-    const btn    = document.getElementById('btn');
-    const label  = document.getElementById('btn-text');
-    const spin   = document.getElementById('btn-spin');
-    const status = document.getElementById('status');
+    const btn    = document.getElementById('sub-btn');
+    const status = document.getElementById('sub-status');
     const email  = input.value.trim();
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      status.className = 'err';
+      status.className = 'status-msg err';
       status.textContent = 'Please enter a valid email address.';
       return;
     }
-    btn.disabled = true; label.hidden = true; spin.hidden = false;
-    status.className = ''; status.textContent = '';
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span> Subscribing…';
+    status.className = 'status-msg';
+    status.textContent = '';
+
     try {
       const res = await fetch(`${API}/phase3/subscribe`, {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body:    JSON.stringify({ email }),
       });
       if (res.ok) {
-        status.className = 'ok';
+        status.className = 'status-msg ok';
         status.textContent = `Subscribed — ${esc(email)}`;
         input.value = '';
         await loadSubs();
       } else {
-        const err = await res.json();
-        status.className = 'err';
+        const err = await res.json().catch(() => ({}));
+        status.className = 'status-msg err';
         status.textContent = err.detail || 'Something went wrong.';
       }
     } catch {
-      status.className = 'err';
+      status.className = 'status-msg err';
       status.textContent = 'Network error — is the server running?';
     } finally {
-      btn.disabled = false; label.hidden = false; spin.hidden = true;
+      btn.disabled = false;
+      btn.innerHTML = 'Subscribe';
     }
   });
 
+  // ── Remove subscriber ─────────────────────────
   document.getElementById('list').addEventListener('click', async e => {
     const btn = e.target.closest('.rm');
     if (!btn) return;
     const email = decodeURIComponent(btn.dataset.email);
     if (!confirm(`Remove ${email} from the mailing list?`)) return;
-    btn.textContent = '...'; btn.disabled = true;
+    btn.textContent = '…';
+    btn.disabled = true;
     try {
       const res = await fetch(`${API}/phase3/unsubscribe`, {
-        method: 'DELETE',
+        method:  'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body:    JSON.stringify({ email }),
       });
       if (res.ok) { await loadSubs(); }
       else { btn.textContent = 'remove'; btn.disabled = false; }
     } catch {
-      btn.textContent = 'remove'; btn.disabled = false;
+      btn.textContent = 'remove';
+      btn.disabled = false;
     }
   });
 
+  // ── Run pipeline ──────────────────────────────
+  document.getElementById('run-btn').addEventListener('click', async () => {
+    const btn    = document.getElementById('run-btn');
+    const status = document.getElementById('run-status');
+    const dateInput = document.getElementById('run-date');
+    let runDate = dateInput.value;
+    
+    if (!runDate) {
+      runDate = new Date().toISOString().slice(0, 10);
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span> Running…';
+    status.className = 'status-msg info';
+    status.textContent = `Pipeline started for ${runDate} — this can take a few minutes.`;
+
+    try {
+      const res   = await fetch(`${API}/run?date=${runDate}`, { method: 'POST' });
+      const data  = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        const p2 = data.phase2 || {};
+        status.className = 'status-msg ok';
+        status.textContent = `Done — ${data.phase1_confirmed ?? 0} relevant docs found, ${p2.processed ?? 0} summarised. Digest ${data.digest_built ? 'sent.' : 'not sent (no docs).'}`;
+        await loadSubs();
+      } else {
+        status.className = 'status-msg err';
+        status.textContent = data.detail || 'Pipeline returned an error.';
+      }
+    } catch {
+      status.className = 'status-msg err';
+      status.textContent = 'Network error — is the server running?';
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Send digest';
+    }
+  });
+
+  // ── Init ──────────────────────────────────────
   document.getElementById('refresh').addEventListener('click', loadSubs);
+  document.getElementById('run-date').value = new Date().toISOString().slice(0, 10);
 
   function esc(s) {
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');

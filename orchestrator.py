@@ -176,6 +176,21 @@ async def run_full_pipeline(target_date: Optional[str] = None) -> dict:
     except ImportError as exc:
         print(f"[Orchestrator] Phase 3 digest skipped (not yet available): {exc}")
 
+    # --- DEMO DATA CLEANUP ---
+    import os
+    if os.environ.get("DEMO", "").lower() == "true":
+        try:
+            print("[Orchestrator] DEMO=true detected. Executing DEMO-only cleanup: DELETE FROM documents;")
+            from phase_3.db import get_session_factory
+            from sqlalchemy import text
+            session_factory = get_session_factory()
+            async with session_factory() as session:
+                await session.execute(text("DELETE FROM documents;"))
+                await session.commit()
+            print("[Orchestrator] DEMO cleanup successful.")
+        except Exception as e:
+            print(f"[Orchestrator] DEMO cleanup failed: {e}")
+
     return {
         "run_date": run_date.isoformat(),
         "phase1_confirmed": confirmed,
