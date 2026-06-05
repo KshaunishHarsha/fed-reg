@@ -19,18 +19,29 @@ from pathlib import Path
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 load_dotenv(Path(__file__).parent / ".env")
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-_FRONTEND = Path(__file__).parent / "frontend" / "index.html"
+_ASTRO_DIST = Path(__file__).parent / "sentinel-frontend" / "dist"
+_LEGACY_FRONTEND = Path(__file__).parent / "frontend" / "index.html"
 
 app = FastAPI(
     title="Federal Register Sentinel",
     description="Unified pipeline: Phase 1 → Phase 2 → Phase 3, all in-process.",
     version="1.0.0",
+)
+
+# CORS — allows the Astro dev server (localhost:4321) to call the API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:4321", "http://localhost:3000"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # ── Phase 2 router ────────────────────────────────────────────────────────────
@@ -51,10 +62,19 @@ except ImportError:
 
 # ── Root orchestration endpoint ───────────────────────────────────────────────
 
+# Serve Astro static assets if the dist folder exists
+_astro_assets = _ASTRO_DIST / "_assets"
+if _astro_assets.exists():
+    app.mount("/_assets", StaticFiles(directory=str(_astro_assets)), name="astro-assets")
+
+
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def frontend():
-    """Serve the demo frontend."""
-    return HTMLResponse(_FRONTEND.read_text(encoding="utf-8"))
+    """Serve the Astro frontend (falls back to legacy index.html)."""
+    astro_index = _ASTRO_DIST / "index.html"
+    if astro_index.exists():
+        return HTMLResponse(astro_index.read_text(encoding="utf-8"))
+    return HTMLResponse(_LEGACY_FRONTEND.read_text(encoding="utf-8"))
 
 
 class DemoRequest(BaseModel):
