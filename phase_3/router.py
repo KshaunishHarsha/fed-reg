@@ -542,6 +542,22 @@ async def unsubscribe(email: str = Body(..., embed=True)) -> dict:
     return {"id": row[0], "email": row[1], "enabled": False}
 
 
+@router.get(
+    "/subscribers",
+    summary="List all active mailing list subscribers.",
+)
+async def list_subscribers() -> list:
+    """Return all enabled subscriber email addresses from the mailing_list table."""
+    from sqlalchemy import text
+    session_factory = get_session_factory()
+    async with session_factory() as session:
+        result = await session.execute(
+            text("SELECT id, email, created_at FROM mailing_list WHERE enabled = true ORDER BY created_at")
+        )
+        rows = result.fetchall()
+    return [{"id": r[0], "email": r[1], "created_at": r[2].isoformat() if r[2] else None} for r in rows]
+
+
 # ---------------------------------------------------------------------------
 # POST /phase3/mail/test  — compile + send to DB mailing list
 # ---------------------------------------------------------------------------
