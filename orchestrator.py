@@ -146,28 +146,27 @@ async def run_full_pipeline(target_date: Optional[str] = None) -> dict:
                 f"C:{package.section_c_count} (zero={package.is_zero_result})"
             )
             
-            # Send digest to mailing list subscribers (falls back to YAML for dev)
+            # Send digest to mailing list subscribers
             try:
-                from phase_3.mail_test import send_test_digest
                 from phase_3.mailing_list import get_active_recipients
+                from phase_3.mail_test import send_test_digest
                 recipients = await get_active_recipients()
-                if not recipients:
-                    # Dev fallback: YAML test recipients when DB list is empty
-                    from phase_3.mail_test import load_test_recipients
-                    recipients = load_test_recipients()
-                loop = asyncio.get_event_loop()
-                result = await loop.run_in_executor(
-                    _executor,
-                    lambda: send_test_digest(
-                        html_body=package.html_body,
-                        text_body=package.text_body,
-                        digest_date=package.digest_date,
-                        recipients=recipients,
-                    ),
-                )
-                print(f"[Orchestrator] Digest sent to {result['sent']} (failed: {result['failed']})")
+                if recipients:
+                    loop = asyncio.get_event_loop()
+                    result = await loop.run_in_executor(
+                        _executor,
+                        lambda: send_test_digest(
+                            html_body=package.html_body,
+                            text_body=package.text_body,
+                            digest_date=package.digest_date,
+                            recipients=recipients,
+                        ),
+                    )
+                    print(f"[Orchestrator] Email sent to {result['sent']} (failed: {result['failed']})")
+                else:
+                    print("[Orchestrator] No active subscribers in mailing list — email skipped.")
             except Exception as e:
-                print(f"[Orchestrator] Failed to send digest email: {e}")
+                print(f"[Orchestrator] Failed to send email: {e}")
                 
             # TODO Step 4: platform_handoff.send_digest(package)
             digest_built = True

@@ -136,3 +136,21 @@ GRANT ALL PRIVILEGES ON TABLE documents TO anon;
 GRANT ALL PRIVILEGES ON TABLE summaries TO anon;
 GRANT ALL PRIVILEGES ON TABLE filter_audit TO anon;
 GRANT USAGE, SELECT ON SEQUENCE filter_audit_id_seq TO anon;
+
+
+-- ============================================================
+-- TABLE 4: mailing_list
+-- Stores subscriber email addresses for the daily digest.
+-- Managed via POST /phase3/subscribe and DELETE /phase3/unsubscribe.
+-- ============================================================
+CREATE TABLE mailing_list (
+    id          BIGSERIAL PRIMARY KEY,
+    email       TEXT NOT NULL UNIQUE,
+    enabled     BOOLEAN NOT NULL DEFAULT true,
+    created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX idx_mailing_list_enabled ON mailing_list (enabled);
+
+GRANT ALL PRIVILEGES ON TABLE mailing_list TO anon;
+GRANT USAGE, SELECT ON SEQUENCE mailing_list_id_seq TO anon;

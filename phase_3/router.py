@@ -34,6 +34,7 @@ from sqlalchemy import text
 from phase_3.db import get_session_factory
 from phase_3.digest_builder import DigestPackage, build_digest
 from phase_3.digest_query import fetch_digest_rows
+from phase_3.mailing_list import add_subscriber, get_active_recipients
 from phase_3.models import IngestPayload, ValidationResult
 from phase_3.persistence import PersistenceResult, persist_validated_document
 from phase_3.validator import validate_blob
@@ -505,7 +506,44 @@ async def validate_test(
 
 
 # ---------------------------------------------------------------------------
-# POST /phase3/mail/test  — DEV ONLY: compile + send to test_recipients.yaml
+# POST /phase3/subscribe  — add email to db mailing list
+# DELETE /phase3/unsubscribe  — disable email in db mailing list
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/subscribe",
+    summary="Add an email address to the mailing list.",
+)
+async def subscribe(email: str = Body(..., embed=True)) -> dict:
+    """Upsert an email into the `mailing_list` table. Re-enables if previously disabled."""
+    try:
+        return await add_subscriber(email)
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+
+
+@router.delete(
+    "/unsubscribe",
+    summary="Disable an email address in the mailing list.",
+)
+async def unsubscribe(email: str = Body(..., embed=True)) -> dict:
+    """Set enabled=false for the given email. Does not delete the row."""
+    from sqlalchemy import text
+    session_factory = get_session_factory()
+    async with session_factory() as session:
+        result = await session.execute(
+            text("UPDATE mailing_list SET enabled = false WHERE email = :email RETURNING id, email"),
+            {"email": email},
+        )
+        row = result.fetchone()
+        await session.commit()
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"{email} not found in mailing list.")
+    return {"id": row[0], "email": row[1], "enabled": False}
+
+
+# ---------------------------------------------------------------------------
+# POST /phase3/mail/test  — compile + send to DB mailing list
 # ---------------------------------------------------------------------------
 
 class MailTestResult(BaseModel):
@@ -522,7 +560,7 @@ class MailTestResult(BaseModel):
 @router.post(
     "/mail/test",
     response_model=MailTestResult,
-    summary="[Dev] Compile digest and send to addresses in test_recipients.yaml.",
+    summary="[Dev] Compile digest and send to all active mailing list subscribers.",
     include_in_schema=True,
     responses={
         200: {"description": "Emails dispatched. Check sent/failed lists in response."},
@@ -556,7 +594,7 @@ async def mail_test(
     import asyncio
     from datetime import datetime, timezone
 
-    from phase_3.mail_test import load_test_recipients, send_test_digest
+    from phase_3.mail_test import send_test_digest
 
     run_date = target_date or datetime.now(timezone.utc).date()
 
@@ -570,13 +608,12 @@ async def mail_test(
             detail=f"Digest compilation error: {exc}",
         )
 
-    # -- Load recipients --------------------------------------------------------
-    try:
-        recipients = load_test_recipients()
-    except (FileNotFoundError, ValueError) as exc:
+    # -- Load recipients from DB ------------------------------------------------
+    recipients = await get_active_recipients()
+    if not recipients:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(exc),
+            detail="No active subscribers in mailing list. Add one via POST /phase3/subscribe.",
         )
 
     # -- Send via SMTP (blocking — run in thread pool so we don’t block the event loop)
