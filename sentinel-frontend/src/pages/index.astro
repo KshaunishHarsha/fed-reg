@@ -3,433 +3,241 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout>
+<main>
 
-<!-- ======================================================= -->
-<!-- NAV                                                       -->
-<!-- ======================================================= -->
-<nav class="nav">
-  <div class="nav-inner">
-    <a href="/" class="nav-logo" aria-label="Open Paws home">
-      <span class="nav-logo-symbol">⬡</span>
-      <span class="nav-logo-text">Open<span class="teal">Paws</span></span>
-    </a>
-    <div class="nav-links">
-      <a href="#how-it-works">How it works</a>
-      <a href="#subscribe" class="nav-cta">Subscribe</a>
-    </div>
-  </div>
-</nav>
+  <!-- NAV -->
+  <nav>
+    <span class="brand">Open<span>Paws</span> · Federal Register Sentinel</span>
+    <span class="label">DEMO</span>
+  </nav>
 
-<!-- ======================================================= -->
-<!-- HERO                                                      -->
-<!-- ======================================================= -->
-<header class="hero">
-  <div class="hero-bg-glow" aria-hidden="true"></div>
-  <div class="container">
-    <p class="hero-eyebrow mono">[ Federal Register Sentinel ]</p>
-    <h1 class="hero-title">Every animal-relevant<br /><em>federal rule. Every day.</em></h1>
-    <p class="hero-subtitle">
-      An open-source AI pipeline built for the Animal Legal Defense Fund — scanning the Federal Register daily, filtering for animal law, and delivering plain-language digest emails to advocates who need to act.
-    </p>
-    <div class="hero-badges">
-      <span class="badge">Phase 1 ✓</span>
-      <span class="badge">Phase 2 ✓</span>
-      <span class="badge">Phase 3 ✓</span>
-      <span class="badge badge-teal">Live & Running</span>
-    </div>
-    <div class="hero-scroll-hint" aria-hidden="true">
-      <span class="mono" style="font-size:11px;color:#555">scroll to explore</span>
-      <div class="scroll-arrow"></div>
-    </div>
-  </div>
-</header>
+  <!-- INTRO -->
+  <section class="intro">
+    <p class="kicker">Animal Legal Defense Fund</p>
+    <h1>Daily regulatory intelligence,<br /><em>automated.</em></h1>
+    <p class="lead">The Federal Register publishes hundreds of documents daily. This pipeline finds the ones that matter to animal law — and emails your team a plain-language digest every morning.</p>
+  </section>
 
-<!-- ======================================================= -->
-<!-- SUBSCRIBE + LIVE LIST                                     -->
-<!-- ======================================================= -->
-<section class="section subscribe-section" id="subscribe">
-  <div class="container">
-    <div class="section-label mono">[ 01 — Mailing List ]</div>
-    <h2 class="section-title">Get the daily digest.</h2>
-    <p class="section-sub">Enter your email to receive the Federal Register Sentinel digest whenever animal-relevant regulations are published.</p>
+  <!-- SUBSCRIBE + LIST -->
+  <section class="two-col">
 
-    <div class="subscribe-grid">
-
-      <!-- Subscribe form -->
-      <div class="subscribe-card">
-        <h3 class="card-heading">Subscribe</h3>
-        <form id="subscribe-form" novalidate>
-          <div class="input-row">
-            <label for="email-input" class="sr-only">Email address</label>
-            <input
-              id="email-input"
-              type="email"
-              placeholder="attorney@aldf.org"
-              autocomplete="email"
-              required
-              class="email-input"
-            />
-            <button type="submit" class="btn-primary" id="subscribe-btn">
-              <span id="subscribe-btn-text">Subscribe</span>
-              <span id="subscribe-btn-spinner" class="spinner" hidden aria-hidden="true"></span>
-            </button>
-          </div>
-          <div id="subscribe-status" class="form-status" role="alert" aria-live="polite"></div>
-        </form>
-        <p class="form-note mono">No spam. Only regulatory updates that matter. Unsubscribe any time.</p>
-      </div>
-
-      <!-- Live subscriber list -->
-      <div class="subscribers-card">
-        <div class="subscribers-header">
-          <h3 class="card-heading">Active Subscribers</h3>
-          <button id="refresh-btn" class="btn-ghost" aria-label="Refresh subscriber list">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+    <div class="panel">
+      <p class="panel-label">Subscribe</p>
+      <p class="panel-sub">Receive the daily digest when animal-relevant regulations are published.</p>
+      <form id="form" novalidate>
+        <div class="row">
+          <label for="email" class="sr-only">Email address</label>
+          <input id="email" type="email" placeholder="you@aldf.org" autocomplete="email" required />
+          <button type="submit" id="btn">
+            <span id="btn-text">Subscribe</span>
+            <span id="btn-spin" hidden class="spin"></span>
           </button>
         </div>
-        <div id="subscribers-list" class="subscribers-list">
-          <div class="loading-state">
-            <div class="loading-dot"></div>
-            <div class="loading-dot"></div>
-            <div class="loading-dot"></div>
-          </div>
-        </div>
-        <div id="subscribers-count" class="subscribers-count mono"></div>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<!-- ======================================================= -->
-<!-- HOW IT WORKS                                             -->
-<!-- ======================================================= -->
-<section class="section" id="how-it-works">
-  <div class="container">
-    <div class="section-label mono">[ 02 — Architecture ]</div>
-    <h2 class="section-title">Three phases. One pipeline.</h2>
-    <p class="section-sub">Every morning at 7:30 AM, the sentinel wakes up and runs a fully automated regulatory intelligence cycle.</p>
-
-    <div class="phases-grid">
-
-      <div class="phase-card">
-        <div class="phase-number mono">01</div>
-        <div class="phase-icon">🔍</div>
-        <h3 class="phase-title">Ingestion & Filtering</h3>
-        <p class="phase-desc">Connects directly to the official Federal Register API for 7 target agencies — USDA, FDA, NOAA, Fish & Wildlife Service, NIH, and more. A 4-layer filter pipeline reduces ~500 daily documents down to a precise set of animal-relevant items.</p>
-        <ul class="phase-layers">
-          <li><span class="mono teal">L1</span> Agency + type pre-filter</li>
-          <li><span class="mono teal">L2</span> Anchor & contextual keyword scoring</li>
-          <li><span class="mono teal">L2a</span> Full-text PDF deep scan</li>
-          <li><span class="mono teal">L3</span> GPT-4o-mini AI verification</li>
-        </ul>
-      </div>
-
-      <div class="phase-connector" aria-hidden="true">→</div>
-
-      <div class="phase-card">
-        <div class="phase-number mono">02</div>
-        <div class="phase-icon">✍️</div>
-        <h3 class="phase-title">LLM Summarization</h3>
-        <p class="phase-desc">Routes each confirmed document through one of three tiers based on page length. GPT-4o-mini generates plain-language summaries with advocacy relevance, suggested actions, and talking points — all validated against a strict XML schema.</p>
-        <ul class="phase-layers">
-          <li><span class="mono teal">T1</span> Short docs (&lt;15 pages) — abstract direct</li>
-          <li><span class="mono teal">T2</span> Medium (15–50 pages) — boilerplate pruned</li>
-          <li><span class="mono teal">T3</span> Long (&gt;50 pages) — context block reuse</li>
-        </ul>
-      </div>
-
-      <div class="phase-connector" aria-hidden="true">→</div>
-
-      <div class="phase-card">
-        <div class="phase-number mono">03</div>
-        <div class="phase-icon">📬</div>
-        <h3 class="phase-title">Digest & Delivery</h3>
-        <p class="phase-desc">Validates all summaries, organizes them into a structured HTML + plain-text digest, and emails it to all active subscribers. Documents are sorted into three priority sections — Action Required, Watchdog, and Potential Matches.</p>
-        <ul class="phase-layers">
-          <li><span class="mono teal">A</span> Proposed rules with open comment windows</li>
-          <li><span class="mono teal">B</span> Final rules &amp; informational notices</li>
-          <li><span class="mono teal">C</span> Borderline / unconfirmed relevance</li>
-        </ul>
-      </div>
-
+        <p id="status" role="alert" aria-live="polite"></p>
+      </form>
     </div>
 
-    <!-- Stats row -->
-    <div class="stats-row">
-      <div class="stat">
-        <div class="stat-number">7</div>
-        <div class="stat-label mono">Target Agencies</div>
+    <div class="panel">
+      <div class="panel-top">
+        <p class="panel-label">Active subscribers</p>
+        <span class="dev-tag">Only visible in this demo — hidden in production</span>
+        <button id="refresh" class="refresh-btn" aria-label="Refresh">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
       </div>
-      <div class="stat-divider" aria-hidden="true"></div>
-      <div class="stat">
-        <div class="stat-number">4</div>
-        <div class="stat-label mono">Filter Layers</div>
+      <div id="list" class="list-body">
+        <div class="dots"><span></span><span></span><span></span></div>
       </div>
-      <div class="stat-divider" aria-hidden="true"></div>
-      <div class="stat">
-        <div class="stat-number">3</div>
-        <div class="stat-label mono">Summarization Tiers</div>
-      </div>
-      <div class="stat-divider" aria-hidden="true"></div>
-      <div class="stat">
-        <div class="stat-number">0</div>
-        <div class="stat-label mono">Manual Steps</div>
-      </div>
+      <p id="count" class="count"></p>
     </div>
-  </div>
-</section>
 
-<!-- ======================================================= -->
-<!-- TECH STACK                                               -->
-<!-- ======================================================= -->
-<section class="section tech-section">
-  <div class="container">
-    <div class="section-label mono">[ 03 — Technology ]</div>
-    <h2 class="section-title">Built to last.</h2>
-    <div class="tech-grid">
-      <div class="tech-item">
-        <span class="tech-name mono">Federal Register API</span>
-        <span class="tech-desc">Official government feed — no scraping, no maintenance</span>
-      </div>
-      <div class="tech-item">
-        <span class="tech-name mono">OpenAI GPT-4o-mini</span>
-        <span class="tech-desc">Cost-efficient AI — only called after keyword pre-filter</span>
-      </div>
-      <div class="tech-item">
-        <span class="tech-name mono">Pydantic v2 + Instructor</span>
-        <span class="tech-desc">Structured validation with automatic self-correction loops</span>
-      </div>
-      <div class="tech-item">
-        <span class="tech-name mono">Supabase / PostgreSQL</span>
-        <span class="tech-desc">Secure persistent storage with idempotency caching</span>
-      </div>
-      <div class="tech-item">
-        <span class="tech-name mono">FastAPI + asyncpg</span>
-        <span class="tech-desc">Single-process async Python — all phases in one port</span>
-      </div>
-      <div class="tech-item">
-        <span class="tech-name mono">PyMuPDF</span>
-        <span class="tech-desc">Full-text PDF extraction for docs without abstract</span>
-      </div>
-    </div>
-  </div>
-</section>
+  </section>
 
-<!-- ======================================================= -->
-<!-- PROJECT INFO                                             -->
-<!-- ======================================================= -->
-<section class="section info-section">
-  <div class="container">
-    <div class="section-label mono">[ 04 — About ]</div>
-    <h2 class="section-title">The problem we're solving.</h2>
+  <!-- PIPELINE -->
+  <section class="pipeline-section">
+    <p class="kicker">How it works</p>
+    <h2>Three phases. Zero manual steps.</h2>
 
-    <div class="info-grid">
-      <div class="info-block">
-        <h3 class="info-heading">The Burden</h3>
-        <p>Attorneys, policy analysts, and legal leads at the Animal Legal Defense Fund must manually review the Federal Register every day — hundreds of pages of dense government text — to find the handful of entries relevant to animal law. Missing a public comment deadline has real consequences for advocacy efforts.</p>
+    <div class="pipeline">
+      <div class="step">
+        <p class="step-num">01</p>
+        <p class="step-title">Ingest & Filter</p>
+        <p class="step-body">Pulls new publications daily from 7 federal agencies. A four-layer pipeline — agency filter, keyword scoring, full-text PDF scan, AI verification — narrows ~500 documents to the handful that are animal-relevant.</p>
       </div>
-      <div class="info-block">
-        <h3 class="info-heading">The Solution</h3>
-        <p>Federal Register Sentinel eliminates this manual burden entirely. The system automatically monitors all relevant agencies, applies a calibrated multi-layer filter tuned for high recall (false negatives are worse than false positives), and delivers a clean, actionable digest every morning.</p>
+      <div class="arrow">→</div>
+      <div class="step">
+        <p class="step-num">02</p>
+        <p class="step-title">Summarise</p>
+        <p class="step-body">Each confirmed document is routed by page length and processed by GPT-4o-mini. Output includes a plain-language summary, advocacy relevance, suggested actions, and talking points — validated against a strict schema.</p>
       </div>
-      <div class="info-block">
-        <h3 class="info-heading">Open Source</h3>
-        <p>This tool is part of OpenPaws.ai — an open-source initiative building AI tools, hackathons, and research to power the animal advocacy movement. Every decision, keyword score, and AI verification reason is saved to a permanent audit log for full transparency.</p>
-      </div>
-      <div class="info-block">
-        <h3 class="info-heading">What's Excluded</h3>
-        <p>There is no human review queue (adds operational burden), no state or international content (out of scope), no live streaming webhooks (government feed updates once daily), and no silent shutdowns — even on zero-result days, a confirmation digest is sent.</p>
+      <div class="arrow">→</div>
+      <div class="step">
+        <p class="step-num">03</p>
+        <p class="step-title">Deliver</p>
+        <p class="step-body">Summaries are compiled into a structured HTML digest sorted by urgency — proposed rules with open comment windows first, then final rules, then potential matches — and emailed to all subscribers.</p>
       </div>
     </div>
 
-    <!-- Pipeline flow diagram -->
-    <div class="pipeline-diagram">
-      <div class="pipeline-step">
-        <div class="pipeline-icon">📡</div>
-        <div class="pipeline-text mono">FR API Pull</div>
-      </div>
-      <div class="pipeline-arrow">→</div>
-      <div class="pipeline-step">
-        <div class="pipeline-icon">🔎</div>
-        <div class="pipeline-text mono">Keyword Filter</div>
-      </div>
-      <div class="pipeline-arrow">→</div>
-      <div class="pipeline-step">
-        <div class="pipeline-icon">🤖</div>
-        <div class="pipeline-text mono">AI Verification</div>
-      </div>
-      <div class="pipeline-arrow">→</div>
-      <div class="pipeline-step">
-        <div class="pipeline-icon">✍️</div>
-        <div class="pipeline-text mono">LLM Summary</div>
-      </div>
-      <div class="pipeline-arrow">→</div>
-      <div class="pipeline-step">
-        <div class="pipeline-icon">✅</div>
-        <div class="pipeline-text mono">Validate & Store</div>
-      </div>
-      <div class="pipeline-arrow">→</div>
-      <div class="pipeline-step pipeline-step-teal">
-        <div class="pipeline-icon">📬</div>
-        <div class="pipeline-text mono">Email Digest</div>
-      </div>
+    <div class="chips">
+      <span class="chip">Agency pre-filter</span>
+      <span class="chip">Keyword scoring</span>
+      <span class="chip">PDF scan</span>
+      <span class="chip">AI verify</span>
+      <span class="chip teal">LLM summary</span>
+      <span class="chip teal">Email digest</span>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- ======================================================= -->
-<!-- FOOTER                                                   -->
-<!-- ======================================================= -->
-<footer class="footer">
-  <div class="container">
-    <div class="footer-top">
-      <div class="footer-brand">
-        <span class="nav-logo-symbol teal">⬡</span>
-        <span style="font-family:'DM Serif Display',serif;font-size:20px;">OpenPaws.ai</span>
-      </div>
-      <p class="footer-tagline">Building AI for the animal advocacy movement.</p>
-    </div>
-    <div class="footer-divider" aria-hidden="true"></div>
-    <div class="footer-bottom">
-      <p class="mono" style="font-size:12px;color:#444;">[ EST. 2024 ] — Federal Register Sentinel is an open-source project. All summaries are AI-generated and informational only — not legal advice.</p>
-      <div class="footer-links">
-        <a href="https://federalregister.gov" target="_blank" rel="noopener noreferrer" class="footer-link">Federal Register ↗</a>
-        <a href="https://regulations.gov" target="_blank" rel="noopener noreferrer" class="footer-link">Regulations.gov ↗</a>
-        <a href="http://localhost:8000/docs" target="_blank" rel="noopener noreferrer" class="footer-link">API Docs ↗</a>
-      </div>
-    </div>
-  </div>
-</footer>
+  <!-- FOOTER -->
+  <footer>
+    <span>OpenPaws.ai · Built for the Animal Legal Defense Fund</span>
+    <span>Summaries are AI-generated and informational only — not legal advice.</span>
+  </footer>
 
+</main>
 </Layout>
 
-<!-- ======================================================= -->
-<!-- STYLES                                                   -->
-<!-- ======================================================= -->
 <style>
-  /* ── Utilities ─────────────────────────────────── */
-  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
-  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
-  .mono { font-family: 'JetBrains Mono', monospace; }
-  .teal { color: #006C67; }
-  .section { padding: 100px 0; border-top: 1px solid #111; }
-  .section-label { font-size: 11px; font-weight: 500; color: #555; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 16px; }
-  .section-title { font-family: 'DM Serif Display', serif; font-size: clamp(32px, 5vw, 52px); color: #fff; line-height: 1.1; margin-bottom: 16px; }
-  .section-sub { font-size: 17px; color: #888; max-width: 560px; line-height: 1.65; margin-bottom: 56px; }
+  /* ── Tokens ──────────────────────────────────── */
+  :root {
+    --black:  #000;
+    --white:  #fff;
+    --teal:   #006C67;
+    --grey:   #888;
+    --border: #e8e8e8;
+    --soft:   #f7f7f7;
+    --text:   #111;
+    --muted:  #666;
+  }
+  .sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0); }
 
-  /* ── Nav ──────────────────────────────────────── */
-  .nav {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-    background: rgba(0,0,0,0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-bottom: 1px solid #111;
+  /* ── Shell ───────────────────────────────────── */
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 28px 56px;
   }
-  .nav-inner {
-    max-width: 1100px; margin: 0 auto; padding: 0 24px;
-    display: flex; align-items: center; justify-content: space-between;
-    height: 60px;
-  }
-  .nav-logo {
-    display: flex; align-items: center; gap: 8px;
-    font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 16px;
-    color: #fff; text-decoration: none;
-  }
-  .nav-logo:hover { text-decoration: none; }
-  .nav-logo-symbol { color: #006C67; font-size: 18px; }
-  .nav-links { display: flex; align-items: center; gap: 32px; }
-  .nav-links a { font-size: 14px; color: #888; font-weight: 500; transition: color 0.2s; text-decoration: none; }
-  .nav-links a:hover { color: #fff; text-decoration: none; }
-  .nav-cta {
-    background: #006C67 !important; color: #fff !important;
-    padding: 8px 20px; border-radius: 6px; font-weight: 600 !important;
-    transition: opacity 0.2s !important;
-  }
-  .nav-cta:hover { opacity: 0.85; }
 
-  /* ── Hero ──────────────────────────────────────── */
-  .hero {
-    padding: 160px 0 120px;
-    position: relative; overflow: hidden;
-    border-bottom: 1px solid #111;
+  /* ── Nav ─────────────────────────────────────── */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 44px;
   }
-  .hero-bg-glow {
-    position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
-    width: 700px; height: 700px;
-    background: radial-gradient(circle, rgba(0,108,103,0.1) 0%, transparent 70%);
-    pointer-events: none;
-  }
-  .hero-eyebrow { font-size: 11px; color: #555; letter-spacing: 0.15em; margin-bottom: 24px; }
-  .hero-title {
+  .brand {
     font-family: 'DM Serif Display', serif;
-    font-size: clamp(42px, 7vw, 80px);
-    line-height: 1.05; color: #fff; margin-bottom: 24px;
+    font-size: 17px;
+    color: var(--black);
+    letter-spacing: -0.01em;
   }
-  .hero-title em { color: #006C67; font-style: italic; }
-  .hero-subtitle {
-    font-size: 18px; color: #777; max-width: 600px;
-    line-height: 1.65; margin-bottom: 40px;
+  .brand span { color: var(--teal); }
+  .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--grey);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 4px;
   }
-  .hero-badges { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 60px; }
-  .badge {
-    font-family: 'JetBrains Mono', monospace; font-size: 12px;
-    padding: 5px 12px; border: 1px solid #222; border-radius: 4px; color: #555;
-  }
-  .badge-teal { border-color: #006C67; color: #006C67; }
-  .hero-scroll-hint { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
-  .scroll-arrow {
-    width: 1px; height: 40px; background: linear-gradient(to bottom, #006C67, transparent);
-    animation: scrollPulse 2s ease-in-out infinite;
-  }
-  @keyframes scrollPulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
 
-  /* ── Subscribe Section ─────────────────────────── */
-  .subscribe-section { padding-bottom: 80px; }
-  .subscribe-grid {
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: 24px; align-items: start;
+  /* ── Intro ───────────────────────────────────── */
+  .intro { margin-bottom: 40px; }
+  .kicker {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--grey);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
   }
-  @media (max-width: 700px) { .subscribe-grid { grid-template-columns: 1fr; } }
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 400;
+    color: var(--black);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 14px;
+  }
+  h1 em { color: var(--teal); font-style: italic; }
+  .lead {
+    font-size: 15px;
+    color: var(--muted);
+    max-width: 580px;
+    line-height: 1.65;
+  }
 
-  .subscribe-card, .subscribers-card {
-    background: #0a0a0a; border: 1px solid #1a1a1a;
-    border-radius: 14px; padding: 32px;
+  /* ── Two-col ─────────────────────────────────── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 48px;
   }
-  .card-heading {
-    font-family: 'DM Serif Display', serif; font-size: 22px; color: #fff;
-    margin-bottom: 24px;
+  @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+
+  .panel {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    background: var(--white);
   }
-  .input-row { display: flex; gap: 10px; margin-bottom: 12px; }
-  .email-input {
-    flex: 1; padding: 12px 16px;
-    background: #000; border: 1px solid #222; border-radius: 8px;
-    color: #fff; font-family: 'Space Grotesk', sans-serif; font-size: 15px;
-    transition: border-color 0.2s;
+  .panel-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--black);
+    margin-bottom: 6px;
+  }
+  .panel-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 18px;
+    line-height: 1.55;
+  }
+
+  /* Form */
+  .row { display: flex; gap: 8px; margin-bottom: 8px; }
+  input[type="email"] {
+    flex: 1;
+    padding: 9px 13px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    color: var(--black);
+    background: var(--white);
     outline: none;
+    transition: border-color 0.15s;
   }
-  .email-input::placeholder { color: #444; }
-  .email-input:focus { border-color: #006C67; }
-  .btn-primary {
-    padding: 12px 24px; background: #006C67; border: none; border-radius: 8px;
-    color: #fff; font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600;
-    cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 8px;
-    transition: opacity 0.2s;
-  }
-  .btn-primary:hover { opacity: 0.85; }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-  .form-status {
-    font-size: 14px; min-height: 20px; padding: 0 2px;
-    transition: all 0.2s;
-  }
-  .form-status.success { color: #006C67; }
-  .form-status.error { color: #FF8552; }
-  .form-note { font-size: 12px; color: #444; margin-top: 16px; }
+  input[type="email"]::placeholder { color: #c0c0c0; }
+  input[type="email"]:focus { border-color: var(--teal); }
 
-  /* Spinner */
-  .spinner {
-    width: 14px; height: 14px;
-    border: 2px solid rgba(255,255,255,0.2);
+  button[type="submit"] {
+    padding: 9px 18px;
+    background: var(--teal);
+    border: none;
+    border-radius: 7px;
+    color: #fff;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+  }
+  button[type="submit"]:hover { opacity: 0.85; }
+  button[type="submit"]:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .spin {
+    width: 12px; height: 12px;
+    border: 2px solid rgba(255,255,255,0.3);
     border-top-color: #fff;
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
@@ -437,263 +245,288 @@ import Layout from '../layouts/Layout.astro';
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Subscriber list */
-  .subscribers-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-  .btn-ghost {
-    background: none; border: 1px solid #222; border-radius: 6px;
-    color: #555; padding: 6px 8px; cursor: pointer;
-    display: flex; align-items: center; transition: all 0.2s;
+  #status {
+    font-size: 12px;
+    min-height: 16px;
+    color: var(--grey);
   }
-  .btn-ghost:hover { border-color: #006C67; color: #006C67; }
-  .subscribers-list { min-height: 80px; }
-  .subscriber-item {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 0; border-bottom: 1px solid #111;
-    font-size: 14px; animation: fadeIn 0.3s ease;
-  }
-  .subscriber-item:last-child { border-bottom: none; }
-  .subscriber-email { color: #ccc; font-family: 'JetBrains Mono', monospace; }
-  .subscriber-date { color: #444; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
-  .remove-btn {
-    background: none; border: none; cursor: pointer; color: #333;
-    font-size: 14px; padding: 2px 6px; border-radius: 4px;
-    transition: all 0.2s; line-height: 1;
-  }
-  .remove-btn:hover { color: #FF8552; background: rgba(255,133,82,0.08); }
-  .subscribers-count { font-size: 11px; color: #444; margin-top: 16px; letter-spacing: 0.05em; }
-  .empty-state { color: #444; font-size: 14px; padding: 16px 0; text-align: center; }
-  .loading-state { display: flex; gap: 6px; padding: 16px 0; justify-content: center; }
-  .loading-dot {
-    width: 6px; height: 6px; background: #333; border-radius: 50%;
-    animation: loadBounce 1.2s ease-in-out infinite;
-  }
-  .loading-dot:nth-child(2) { animation-delay: 0.2s; }
-  .loading-dot:nth-child(3) { animation-delay: 0.4s; }
-  @keyframes loadBounce { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; } 40% { transform: scale(1); opacity: 1; } }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  #status.ok  { color: var(--teal); }
+  #status.err { color: #c0392b; }
 
-  /* ── Phases Grid ──────────────────────────────── */
-  .phases-grid {
+  /* Subscriber panel */
+  .panel-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .panel-top .panel-label { margin-bottom: 0; flex: 1; }
+  .dev-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    color: #FF8552;
+    border: 1px solid rgba(255,133,82,0.25);
+    padding: 3px 8px;
+    border-radius: 3px;
+    background: rgba(255,133,82,0.06);
+    white-space: nowrap;
+  }
+  .refresh-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--grey);
+    padding: 5px 7px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: all 0.15s;
+  }
+  .refresh-btn:hover { border-color: var(--teal); color: var(--teal); }
+
+  .list-body { max-height: 150px; overflow-y: auto; }
+  .sub-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+    animation: fadeIn 0.2s ease;
+  }
+  .sub-row:last-child { border-bottom: none; }
+  .sub-email {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+  }
+  .sub-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #c8c8c8;
+  }
+  .rm {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #ccc;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .rm:hover { color: #c0392b; background: #fff0ee; }
+
+  .empty {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #ccc;
+    padding: 14px 0;
+    text-align: center;
+  }
+  .count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #c8c8c8;
+    margin-top: 12px;
+  }
+
+  .dots { display: flex; gap: 5px; justify-content: center; padding: 18px 0; }
+  .dots span {
+    width: 5px; height: 5px;
+    background: #e0e0e0;
+    border-radius: 50%;
+    animation: bounce 1.2s ease-in-out infinite;
+  }
+  .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,80%,100% { transform: scale(0.5); opacity: 0.3; } 40% { transform: scale(1); opacity: 1; } }
+  @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+
+  /* ── Pipeline ────────────────────────────────── */
+  .pipeline-section {
+    padding-top: 40px;
+    border-top: 1px solid var(--border);
+  }
+  h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(22px, 3vw, 32px);
+    font-weight: 400;
+    color: var(--black);
+    letter-spacing: -0.015em;
+    margin-bottom: 28px;
+    line-height: 1.2;
+  }
+  .pipeline {
     display: grid;
-    grid-template-columns: 1fr 32px 1fr 32px 1fr;
-    gap: 0; align-items: start; margin-bottom: 64px;
+    grid-template-columns: 1fr 24px 1fr 24px 1fr;
+    align-items: start;
+    margin-bottom: 20px;
   }
-  @media (max-width: 800px) {
-    .phases-grid { grid-template-columns: 1fr; }
-    .phase-connector { display: none; }
+  @media (max-width: 640px) {
+    .pipeline { grid-template-columns: 1fr; }
+    .arrow { display: none; }
   }
-  .phase-card {
-    background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 14px; padding: 32px;
-    transition: border-color 0.3s;
+  .step {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 18px;
+    background: var(--white);
   }
-  .phase-card:hover { border-color: #006C67; }
-  .phase-connector {
-    display: flex; align-items: flex-start; padding-top: 52px;
-    justify-content: center; color: #333; font-size: 20px;
+  .step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--grey);
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
   }
-  .phase-number { font-size: 11px; color: #444; letter-spacing: 0.15em; margin-bottom: 16px; }
-  .phase-icon { font-size: 28px; margin-bottom: 16px; }
-  .phase-title { font-family: 'DM Serif Display', serif; font-size: 22px; color: #fff; margin-bottom: 12px; }
-  .phase-desc { font-size: 14px; color: #666; line-height: 1.65; margin-bottom: 20px; }
-  .phase-layers { list-style: none; display: flex; flex-direction: column; gap: 6px; }
-  .phase-layers li { font-size: 13px; color: #555; display: flex; align-items: baseline; gap: 8px; }
-  .phase-layers .mono { font-size: 11px; }
+  .step-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--black);
+    margin-bottom: 8px;
+  }
+  .step-body {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .arrow {
+    display: flex;
+    align-items: flex-start;
+    padding-top: 28px;
+    justify-content: center;
+    color: #d0d0d0;
+    font-size: 16px;
+  }
 
-  /* Stats */
-  .stats-row {
-    display: flex; align-items: center; justify-content: center;
-    gap: 0; border: 1px solid #1a1a1a; border-radius: 14px;
-    overflow: hidden; background: #0a0a0a;
+  /* Chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--grey);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 5px 10px;
+    background: var(--soft);
   }
-  .stat { flex: 1; text-align: center; padding: 32px 16px; }
-  .stat-number {
-    font-family: 'DM Serif Display', serif; font-size: 48px; color: #006C67;
-    line-height: 1; margin-bottom: 8px;
-  }
-  .stat-label { font-size: 11px; color: #444; letter-spacing: 0.12em; }
-  .stat-divider { width: 1px; height: 64px; background: #1a1a1a; flex-shrink: 0; }
-  @media (max-width: 600px) {
-    .stats-row { flex-direction: column; }
-    .stat-divider { width: 100%; height: 1px; }
+  .chip.teal {
+    color: var(--teal);
+    border-color: rgba(0, 108, 103, 0.2);
+    background: rgba(0, 108, 103, 0.04);
   }
 
-  /* ── Tech Grid ────────────────────────────────── */
-  .tech-section { background: #030303; }
-  .tech-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
-    border: 1px solid #1a1a1a; border-radius: 14px; overflow: hidden;
-    background: #1a1a1a;
+  /* ── Footer ──────────────────────────────────── */
+  footer {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #c0c0c0;
+    font-family: 'JetBrains Mono', monospace;
   }
-  @media (max-width: 700px) { .tech-grid { grid-template-columns: 1fr 1fr; } }
-  @media (max-width: 480px) { .tech-grid { grid-template-columns: 1fr; } }
-  .tech-item {
-    background: #080808; padding: 28px 24px;
-    display: flex; flex-direction: column; gap: 8px;
-    transition: background 0.2s;
-  }
-  .tech-item:hover { background: #0d0d0d; }
-  .tech-name { font-size: 13px; color: #006C67; }
-  .tech-desc { font-size: 14px; color: #555; line-height: 1.55; }
-
-  /* ── Info Grid ────────────────────────────────── */
-  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 64px; }
-  @media (max-width: 700px) { .info-grid { grid-template-columns: 1fr; } }
-  .info-block {
-    padding: 32px; border: 1px solid #1a1a1a; border-radius: 14px;
-    background: #0a0a0a;
-  }
-  .info-heading { font-family: 'DM Serif Display', serif; font-size: 22px; color: #fff; margin-bottom: 12px; }
-  .info-block p { font-size: 15px; color: #666; line-height: 1.65; }
-
-  /* Pipeline diagram */
-  .pipeline-diagram {
-    display: flex; align-items: center; justify-content: center;
-    gap: 0; flex-wrap: wrap;
-    border: 1px solid #1a1a1a; border-radius: 14px;
-    padding: 32px; background: #0a0a0a; gap: 4px;
-  }
-  .pipeline-step {
-    display: flex; flex-direction: column; align-items: center; gap: 8px;
-    padding: 16px 20px;
-  }
-  .pipeline-step-teal { border: 1px solid #006C67; border-radius: 10px; }
-  .pipeline-icon { font-size: 22px; }
-  .pipeline-text { font-size: 11px; color: #555; letter-spacing: 0.05em; }
-  .pipeline-arrow { color: #333; font-size: 18px; padding: 0 4px; }
-
-  /* ── Footer ───────────────────────────────────── */
-  .footer { padding: 64px 0; border-top: 1px solid #111; }
-  .footer-top { margin-bottom: 32px; }
-  .footer-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  .footer-tagline { font-size: 14px; color: #555; }
-  .footer-divider { height: 1px; background: #111; margin-bottom: 24px; }
-  .footer-bottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
-  .footer-links { display: flex; gap: 24px; }
-  .footer-link { font-size: 13px; color: #444; text-decoration: none; transition: color 0.2s; }
-  .footer-link:hover { color: #006C67; text-decoration: none; }
 </style>
 
-<!-- ======================================================= -->
-<!-- CLIENT SCRIPT                                            -->
-<!-- ======================================================= -->
 <script>
-  const API = 'http://localhost:8000';
+  // Relative URLs — proxied by Astro dev server in dev, same-origin in production
+  const API = '';
 
-  // ── Load subscribers ──────────────────────────────────────
-  async function loadSubscribers() {
-    const list = document.getElementById('subscribers-list');
-    const count = document.getElementById('subscribers-count');
+  async function loadSubs() {
+    const list  = document.getElementById('list');
+    const count = document.getElementById('count');
     try {
-      const res = await fetch(`${API}/phase3/subscribers`);
-      if (!res.ok) throw new Error('Failed');
-      const subscribers = await res.json();
-      if (subscribers.length === 0) {
-        list.innerHTML = '<div class="empty-state mono">No active subscribers yet.</div>';
+      const res  = await fetch(`${API}/phase3/subscribers`);
+      const data = await res.json();
+      if (!data.length) {
+        list.innerHTML  = '<div class="empty">No subscribers yet.</div>';
         count.textContent = '';
       } else {
-        list.innerHTML = subscribers.map(s => `
-          <div class="subscriber-item" data-email="${encodeURIComponent(s.email)}">
+        list.innerHTML = data.map(s => `
+          <div class="sub-row">
             <div>
-              <div class="subscriber-email">${escHtml(s.email)}</div>
-              <div class="subscriber-date">${s.created_at ? new Date(s.created_at).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}) : ''}</div>
+              <div class="sub-email">${esc(s.email)}</div>
+              <div class="sub-date">${s.created_at ? new Date(s.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''}</div>
             </div>
-            <button class="remove-btn" data-email="${encodeURIComponent(s.email)}" title="Remove subscriber" aria-label="Remove ${escHtml(s.email)}">✕</button>
-          </div>
-        `).join('');
-        count.textContent = `${subscribers.length} active subscriber${subscribers.length === 1 ? '' : 's'}`;
+            <button class="rm" data-email="${encodeURIComponent(s.email)}" title="Remove">remove</button>
+          </div>`).join('');
+        count.textContent = `${data.length} active`;
       }
     } catch {
-      list.innerHTML = '<div class="empty-state mono" style="color:#555">Couldn\'t reach server.</div>';
+      list.innerHTML = '<div class="empty">Cannot reach server.</div>';
     }
   }
 
-  // ── Subscribe form ────────────────────────────────────────
-  document.getElementById('subscribe-form')?.addEventListener('submit', async (e) => {
+  document.getElementById('form').addEventListener('submit', async e => {
     e.preventDefault();
-    const input = document.getElementById('email-input') as HTMLInputElement;
-    const btn = document.getElementById('subscribe-btn') as HTMLButtonElement;
-    const btnText = document.getElementById('subscribe-btn-text');
-    const btnSpinner = document.getElementById('subscribe-btn-spinner');
-    const email = input.value.trim();
+    const input  = document.getElementById('email');
+    const btn    = document.getElementById('btn');
+    const label  = document.getElementById('btn-text');
+    const spin   = document.getElementById('btn-spin');
+    const status = document.getElementById('status');
+    const email  = input.value.trim();
 
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      showStatus('error', 'Please enter a valid email address.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      status.className = 'err';
+      status.textContent = 'Please enter a valid email address.';
       return;
     }
-
-    btn.disabled = true;
-    btnText && (btnText.hidden = true);
-    btnSpinner && (btnSpinner.hidden = false);
-    showStatus('', '');
-
+    btn.disabled = true; label.hidden = true; spin.hidden = false;
+    status.className = ''; status.textContent = '';
     try {
       const res = await fetch(`${API}/phase3/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        showStatus('error', err.detail || 'Server error. Try again.');
-      } else {
-        showStatus('success', `<strong>${escHtml(email)}</strong> subscribed! The daily digest will arrive each morning.`);
+      if (res.ok) {
+        status.className = 'ok';
+        status.textContent = `Subscribed — ${esc(email)}`;
         input.value = '';
-        await loadSubscribers();
+        await loadSubs();
+      } else {
+        const err = await res.json();
+        status.className = 'err';
+        status.textContent = err.detail || 'Something went wrong.';
       }
     } catch {
-      showStatus('error', 'Network error. Make sure the server is running.');
+      status.className = 'err';
+      status.textContent = 'Network error — is the server running?';
     } finally {
-      btn.disabled = false;
-      btnText && (btnText.hidden = false);
-      btnSpinner && (btnSpinner.hidden = true);
+      btn.disabled = false; label.hidden = false; spin.hidden = true;
     }
   });
 
-  // ── Remove subscriber (delegated) ────────────────────────
-  document.getElementById('subscribers-list')?.addEventListener('click', async (e) => {
-    const btn = (e.target as HTMLElement).closest('.remove-btn') as HTMLElement | null;
+  document.getElementById('list').addEventListener('click', async e => {
+    const btn = e.target.closest('.rm');
     if (!btn) return;
-    const email = decodeURIComponent(btn.dataset.email || '');
-    if (!email) return;
+    const email = decodeURIComponent(btn.dataset.email);
     if (!confirm(`Remove ${email} from the mailing list?`)) return;
-
-    btn.disabled = true;
-    btn.textContent = '…';
-
+    btn.textContent = '...'; btn.disabled = true;
     try {
       const res = await fetch(`${API}/phase3/unsubscribe`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-      if (!res.ok) {
-        alert('Failed to remove subscriber.');
-        btn.disabled = false;
-        btn.textContent = '✕';
-      } else {
-        await loadSubscribers();
-      }
+      if (res.ok) { await loadSubs(); }
+      else { btn.textContent = 'remove'; btn.disabled = false; }
     } catch {
-      alert('Network error.');
-      btn.disabled = false;
-      btn.textContent = '✕';
+      btn.textContent = 'remove'; btn.disabled = false;
     }
   });
 
-  // ── Refresh button ────────────────────────────────────────
-  document.getElementById('refresh-btn')?.addEventListener('click', loadSubscribers);
+  document.getElementById('refresh').addEventListener('click', loadSubs);
 
-  // ── Helpers ───────────────────────────────────────────────
-  function showStatus(type, html) {
-    const el = document.getElementById('subscribe-status');
-    el.className = 'form-status ' + type;
-    el.innerHTML = html;
+  function esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  function escHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
-  // ── Init ──────────────────────────────────────────────────
-  loadSubscribers();
+  loadSubs();
 </script>
