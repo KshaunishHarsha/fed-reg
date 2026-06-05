@@ -30,13 +30,13 @@ python main.py
 curl -X POST http://localhost:8000/run
 
 # Full pipeline run for a specific date (backfill / testing)
-curl -X POST "http://localhost:8000/run?date=2025-01-14"
+curl -X POST "http://localhost:8000/run?date=2026-06-01"
 
 # Phase 1 standalone — dry-run (real FR API, no AI or DB writes)
-cd phase_1 && python pipeline.py --dry-run --date 2025-01-14
+cd phase_1 && python pipeline.py --dry-run --date 2026-06-01
 
 # Full Phase 1 standalone run
-cd phase_1 && python pipeline.py --date 2025-01-14
+cd phase_1 && python pipeline.py --date 2026-06-01
 
 # Unit tests (no env vars required)
 cd phase_1 && python -m pytest tests/ -v   # 43 tests

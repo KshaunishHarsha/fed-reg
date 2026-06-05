@@ -6,9 +6,14 @@ import Layout from '../layouts/Layout.astro';
 <main>
 
   <!-- NAV -->
-  <nav>
-    <span class="brand">Open<span>Paws</span> · Federal Register Sentinel</span>
-    <span class="label">DEMO</span>
+  <nav style="align-items: flex-start;">
+    <span class="brand" style="margin-top: 6px;">Open<span>Paws</span> · Federal Register Sentinel</span>
+    <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+      <span class="label">DEMO ENVIRONMENT</span>
+      <span style="font-size: 12px; font-weight: 500; color: var(--grey); max-width: 320px; text-align: right; line-height: 1.4;">
+        This frontend is a standalone demo. Production deployment will integrate directly into the existing Open Paws platform and authentication infrastructure.
+      </span>
+    </div>
   </nav>
 
   <!-- INTRO -->
@@ -36,6 +41,9 @@ import Layout from '../layouts/Layout.astro';
         <button type="submit" id="sub-btn" class="btn btn-teal">Subscribe</button>
         <p id="sub-status" class="status-msg" role="alert" aria-live="polite"></p>
       </form>
+      <p style="font-size: 13px; color: var(--muted); margin-top: 12px; line-height: 1.5;">
+        <strong>Note:</strong> After subscribing, you must manually run the pipeline below for a specific date to receive an email. We recommend testing with <strong>June 1, 2026</strong> which contains confirmed documents.
+      </p>
 
       <div class="divider"></div>
 
@@ -50,14 +58,19 @@ import Layout from '../layouts/Layout.astro';
 
     <!-- Right: live subscriber list -->
     <div class="panel">
-      <div class="list-header">
-        <div>
-          <p class="panel-label">Active subscribers</p>
-          <p class="demo-note">Only visible in this demo — hidden in production</p>
+      <div class="list-header" style="flex-direction: column; align-items: stretch; gap: 12px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+          <div>
+            <p class="panel-label">Active subscribers</p>
+            <p class="demo-note">Only visible in this demo — hidden in production</p>
+          </div>
+          <button id="refresh" class="icon-btn" aria-label="Refresh list">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          </button>
         </div>
-        <button id="refresh" class="icon-btn" aria-label="Refresh list">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-        </button>
+        <p style="font-size: 13px; color: var(--text); line-height: 1.5; font-weight: 500; background: var(--soft); padding: 12px; border-radius: 6px; border: 1px solid var(--border);">
+          Only one mail will be sent for a day. State is tracked to ensure no double mails are sent, but for this demo we have enabled a bypass allowing the same document to come again when hitting the same date for demo testing.
+        </p>
       </div>
 
       <div id="list" class="sub-list">
@@ -73,9 +86,6 @@ import Layout from '../layouts/Layout.astro';
     <div class="pipeline-header">
       <p class="kicker">How it works</p>
       <h2>Three phases. Zero manual steps.</h2>
-      <p style="font-size: 14px; color: var(--muted); margin-top: 16px; max-width: 650px; margin-left: auto; margin-right: auto; line-height: 1.6;">
-        Only one mail will be sent for a day. State will be tracked to ensure no double mails are sent, but for this demo we have enabled a bypass allowing the same document to come again when hitting the same date for demo testing.
-      </p>
     </div>
 
     <div class="pipeline">
@@ -97,15 +107,6 @@ import Layout from '../layouts/Layout.astro';
         <p class="step-body">Summaries are compiled into a structured HTML digest sorted by urgency — proposed rules with open comment windows first, then final rules, then potential matches — and emailed to all subscribers.</p>
       </div>
     </div>
-
-    <div class="chips">
-      <span class="chip">Agency pre-filter</span>
-      <span class="chip">Keyword scoring</span>
-      <span class="chip">PDF scan</span>
-      <span class="chip">AI verify</span>
-      <span class="chip teal">LLM summary</span>
-      <span class="chip teal">Email digest</span>
-    </div>
   </section>
 
   <!-- FOOTER -->
@@ -123,12 +124,12 @@ import Layout from '../layouts/Layout.astro';
     --black:  #000;
     --white:  #fff;
     --teal:   #006C67;
-    --grey:   #888;
-    --border: #e8e8e8;
+    --grey:   #555;
+    --border: #e0e0e0;
     --soft:   #f7f7f7;
     --text:   #111;
-    --muted:  #666;
-    --coral:  #FF8552;
+    --muted:  #333;
+    --coral:  #E85D04;
   }
   .sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0); }
 
@@ -156,22 +157,25 @@ import Layout from '../layouts/Layout.astro';
   }
   .brand span { color: var(--teal); }
   .label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.14em;
-    color: var(--grey);
-    border: 1px solid var(--border);
-    padding: 4px 10px;
-    border-radius: 4px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    color: var(--teal);
+    background: rgba(0, 108, 103, 0.05);
+    border: 2px solid rgba(0, 108, 103, 0.2);
+    padding: 4px 12px;
+    border-radius: 6px;
   }
 
   /* ── Intro ───────────────────────────────────── */
   .intro { margin-bottom: 40px; }
   .kicker {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 12px;
     color: var(--grey);
-    letter-spacing: 0.12em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     margin-bottom: 10px;
   }
@@ -318,16 +322,17 @@ import Layout from '../layouts/Layout.astro';
   }
   .list-header .panel-label { margin-bottom: 2px; }
   .demo-note {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 9px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 10px;
     letter-spacing: 0.05em;
     color: var(--coral);
-    background: rgba(255,133,82,0.07);
-    border: 1px solid rgba(255,133,82,0.2);
-    border-radius: 3px;
-    padding: 2px 7px;
+    background: rgba(232, 93, 4, 0.08);
+    border: 1px solid rgba(232, 93, 4, 0.25);
+    border-radius: 4px;
+    padding: 3px 8px;
     display: inline-block;
-    margin-top: 4px;
+    margin-top: 6px;
   }
   .icon-btn {
     flex-shrink: 0;
@@ -361,27 +366,30 @@ import Layout from '../layouts/Layout.astro';
   }
   .sub-row:last-child { border-bottom: none; }
   .sub-email {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
     color: var(--text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   .sub-date {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    color: #bbb;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500;
+    font-size: 11px;
+    color: var(--grey);
     white-space: nowrap;
   }
   .rm {
     background: none;
     border: none;
     cursor: pointer;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    color: #ccc;
-    padding: 3px 7px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--grey);
+    padding: 4px 8px;
     border-radius: 4px;
     transition: all 0.15s;
     line-height: 1;
@@ -389,16 +397,18 @@ import Layout from '../layouts/Layout.astro';
   .rm:hover { color: #c0392b; background: #fff0ee; }
 
   .sub-empty {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    color: #ccc;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--grey);
     padding: 16px;
     text-align: center;
   }
   .sub-count {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    color: #bbb;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500;
+    font-size: 12px;
+    color: var(--grey);
     margin-top: 10px;
   }
 
@@ -456,10 +466,11 @@ import Layout from '../layouts/Layout.astro';
     box-shadow: 0 8px 32px rgba(0,0,0,0.05);
   }
   .step-num {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
     color: var(--grey);
-    letter-spacing: 0.12em;
+    letter-spacing: 0.1em;
     margin-bottom: 8px;
   }
   .step-title {
@@ -483,41 +494,19 @@ import Layout from '../layouts/Layout.astro';
     font-size: 16px;
   }
 
-  /* Chips */
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-    margin-top: 36px;
-  }
-  .chip {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    color: var(--grey);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 6px 14px;
-    background: var(--soft);
-  }
-  .chip.teal {
-    color: var(--teal);
-    border-color: rgba(0, 108, 103, 0.2);
-    background: rgba(0, 108, 103, 0.04);
-  }
-
   /* ── Footer ──────────────────────────────────── */
   footer {
     margin-top: 48px;
-    padding-top: 20px;
+    padding-top: 24px;
     border-top: 1px solid var(--border);
     display: flex;
     flex-wrap: wrap;
     gap: 16px;
     justify-content: space-between;
-    font-size: 11px;
-    color: #c0c0c0;
-    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: #666;
+    font-family: 'Space Grotesk', sans-serif;
   }
 </style>
 
