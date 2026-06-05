@@ -111,21 +111,16 @@ async def run_full_pipeline(target_date: Optional[str] = None) -> dict:
     print(f"[Orchestrator] Phase 1 complete — {confirmed} confirmed documents")
 
     if not confirmed:
-        print(f"[Orchestrator] No relevant documents for {run_date} — skipping Phase 2/3")
-        return {
-            "run_date": run_date.isoformat(),
-            "phase1_confirmed": 0,
-            "phase2": {"processed": 0, "failed": 0, "total": 0},
-            "digest_built": False,
-        }
+        print(f"[Orchestrator] No relevant documents for {run_date} — skipping Phase 2")
+        phase2_result = {"processed": 0, "failed": 0, "total": 0}
+    else:
+        # ── Phase 2 ─────────────────────────────────────────────────────────────
+        # Async. The callback delivers each completed document directly to Phase 3.
+        sys.path.insert(0, str(Path(__file__).parent / "phase_2"))
+        from phase_2.pipeline import run_pipeline as phase2_run
 
-    # ── Phase 2 ─────────────────────────────────────────────────────────────
-    # Async. The callback delivers each completed document directly to Phase 3.
-    sys.path.insert(0, str(Path(__file__).parent / "phase_2"))
-    from phase_2.pipeline import run_pipeline as phase2_run
-
-    phase2_result = await phase2_run(phase3_ingest_fn=_phase2_ingest_callback)
-    print(f"[Orchestrator] Phase 2 complete — {phase2_result}")
+        phase2_result = await phase2_run(phase3_ingest_fn=_phase2_ingest_callback)
+        print(f"[Orchestrator] Phase 2 complete — {phase2_result}")
 
     # ── Phase 3 digest ───────────────────────────────────────────────────────
     # Build and send the daily digest from all SUMMARY_GENERATED documents.
@@ -138,40 +133,37 @@ async def run_full_pipeline(target_date: Optional[str] = None) -> dict:
         from phase_3.digest_builder import build_digest
 
         rows = await fetch_digest_rows(run_date)
-        if rows:
-            package = build_digest(rows, run_date)
-            print(
-                f"[Orchestrator] Phase 3 digest built — "
-                f"A:{package.section_a_count} B:{package.section_b_count} "
-                f"C:{package.section_c_count} (zero={package.is_zero_result})"
-            )
+        package = build_digest(rows, run_date)
+        print(
+            f"[Orchestrator] Phase 3 digest built — "
+            f"A:{package.section_a_count} B:{package.section_b_count} "
+            f"C:{package.section_c_count} (zero={package.is_zero_result})"
+        )
+        
+        # Send digest to mailing list subscribers
+        try:
+            from phase_3.mailing_list import get_active_recipients
+            from phase_3.mail_test import send_test_digest
+            recipients = await get_active_recipients()
+            if recipients:
+                loop = asyncio.get_event_loop()
+                result = await loop.run_in_executor(
+                    _executor,
+                    lambda: send_test_digest(
+                        html_body=package.html_body,
+                        text_body=package.text_body,
+                        digest_date=package.digest_date,
+                        recipients=recipients,
+                    ),
+                )
+                print(f"[Orchestrator] Email sent to {result['sent']} (failed: {result['failed']})")
+            else:
+                print("[Orchestrator] No active subscribers in mailing list — email skipped.")
+        except Exception as e:
+            print(f"[Orchestrator] Failed to send email: {e}")
             
-            # Send digest to mailing list subscribers
-            try:
-                from phase_3.mailing_list import get_active_recipients
-                from phase_3.mail_test import send_test_digest
-                recipients = await get_active_recipients()
-                if recipients:
-                    loop = asyncio.get_event_loop()
-                    result = await loop.run_in_executor(
-                        _executor,
-                        lambda: send_test_digest(
-                            html_body=package.html_body,
-                            text_body=package.text_body,
-                            digest_date=package.digest_date,
-                            recipients=recipients,
-                        ),
-                    )
-                    print(f"[Orchestrator] Email sent to {result['sent']} (failed: {result['failed']})")
-                else:
-                    print("[Orchestrator] No active subscribers in mailing list — email skipped.")
-            except Exception as e:
-                print(f"[Orchestrator] Failed to send email: {e}")
-                
-            # TODO Step 4: platform_handoff.send_digest(package)
-            digest_built = True
-        else:
-            print(f"[Orchestrator] No summarized documents for digest on {run_date}")
+        # TODO Step 4: platform_handoff.send_digest(package)
+        digest_built = True
 
     except ImportError as exc:
         print(f"[Orchestrator] Phase 3 digest skipped (not yet available): {exc}")

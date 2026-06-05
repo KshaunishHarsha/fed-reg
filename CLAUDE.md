@@ -408,3 +408,21 @@ recipients = await get_active_recipients()      # async — returns List[str] of
 4. Idempotency everywhere — `persist_validated_document` is safe to call twice
 5. Static links only — never interpolate LLM text into a URL
 6. `DigestPackage` is a Pydantic model — required for FastAPI `response_model` serialization
+
+---
+
+## Demo Mode
+
+To enable a repeatable demo environment, set `DEMO=true` in `.env`.
+
+### Demo Cleanup (`DELETE FROM documents;`)
+When `DEMO=true`, the `orchestrator.py` runs a special cleanup routine at the very end of `run_full_pipeline` (after the digest email is sent). It executes `DELETE FROM documents;` in the Phase 3 database session. 
+- Because `summaries` has an `ON DELETE CASCADE` mapped to `documents`, this wipes all saved state for the run.
+- This allows you to repeatedly test the same date (e.g., via the frontend date picker) without Phase 1 cache preventing re-ingestion, and without cluttering the database.
+
+### "0 Docs Found" / Zero-Result Emails
+If you select a random date, you will often see **"0 confirmed relevant documents"** and receive an empty, circuit-breaker email. This is **expected and correct behavior**:
+- Phase 1 Layer 2 (Keyword Filter) might find documents (e.g., a "Fish and Wildlife Service" administrative meeting).
+- Phase 1 Layer 3 (AI Verification) will accurately identify that the document is *not* relevant to animal law advocacy and will reject it (`is_relevant=False`).
+- If 0 documents pass, Phase 2 is skipped, but Phase 3 compiles and sends the "zero result" fallback email template to prove the system ran successfully.
+- To guarantee documents in a demo, you must select a date known to have published an animal-relevant proposed or final rule.
