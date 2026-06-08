@@ -13,6 +13,7 @@ Endpoints:
   + all Phase 3 endpoints     ← status, digest test, validate test, etc.
 """
 
+import os
 import re
 import uuid
 from pathlib import Path
@@ -44,12 +45,11 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS — localhost for dev, plus any origins listed in ALLOWED_ORIGINS (comma-separated)
-import os as _os
-_extra_origins = [o.strip() for o in _os.environ.get("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+# CORS — origins loaded entirely from ALLOWED_ORIGINS in .env (comma-separated)
+_allowed_origins = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "").split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4321", "http://localhost:3000"] + _extra_origins,
+    allow_origins=_allowed_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
