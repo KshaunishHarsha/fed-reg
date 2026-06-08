@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 
 import yaml
@@ -7,9 +8,15 @@ _keywords_path = Path(__file__).parent / "keywords.yaml"
 with open(_keywords_path) as f:
     _kw = yaml.safe_load(f)
 
-ANCHOR_TERMS: list[str] = _kw["anchor_terms"]
-CONTEXT_TERMS: list[str] = _kw["context_terms"]
-NOISE_TITLE_KEYWORDS: list[str] = _kw["noise_title_keywords"]
+ANCHOR_TERMS: list[str] = [t.lower() for t in _kw["anchor_terms"]]
+CONTEXT_TERMS: list[str] = [t.lower() for t in _kw["context_terms"]]
+NOISE_TITLE_KEYWORDS: list[str] = [t.lower() for t in _kw["noise_title_keywords"]]
+
+_wb_terms = [t.lower() for t in _kw.get("anchor_terms_word_boundary", [])]
+ANCHOR_WB_PATTERN: re.Pattern | None = (
+    re.compile(r"\b(" + "|".join(re.escape(t) for t in _wb_terms) + r")\b")
+    if _wb_terms else None
+)
 
 TARGET_AGENCY_SLUGS = [
     "agricultural-marketing-service",
@@ -21,7 +28,6 @@ TARGET_AGENCY_SLUGS = [
     "national-institutes-of-health",
 ]
 
-# Only these document types are fetched. PRESDOCU excluded entirely.
 TARGET_DOC_TYPES = ["RULE", "PRORULE", "NOTICE"]
 
 CONTEXT_THRESHOLD = 2

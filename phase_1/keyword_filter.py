@@ -53,9 +53,10 @@ def _is_noise(doc: RawDocument) -> bool:
 def _score_keywords(doc: RawDocument) -> Optional[str]:
     text = f"{doc.title} {doc.abstract or ''}".lower()
 
-    for term in config.ANCHOR_TERMS:
-        if term in text:
-            return "HIGH"
+    if any(term in text for term in config.ANCHOR_TERMS):
+        return "HIGH"
+    if config.ANCHOR_WB_PATTERN and config.ANCHOR_WB_PATTERN.search(text):
+        return "HIGH"
 
     score = sum(1 for term in config.CONTEXT_TERMS if term in text)
     if score >= config.CONTEXT_THRESHOLD:
@@ -88,7 +89,6 @@ def _full_text_scan(doc: RawDocument) -> Optional[str]:
         print(f"[FULLTEXT] PDF parse failed for {doc.document_number}: {exc}")
         return None
 
-    anchor_terms_lower = [t.lower() for t in config.ANCHOR_TERMS]
     context_windows: list[str] = []
 
     for page in pdf:
@@ -97,7 +97,10 @@ def _full_text_scan(doc: RawDocument) -> Optional[str]:
 
         for idx, para in enumerate(paragraphs):
             para_lower = para.lower()
-            if any(term in para_lower for term in anchor_terms_lower):
+            if (
+                any(term in para_lower for term in config.ANCHOR_TERMS)
+                or (config.ANCHOR_WB_PATTERN and config.ANCHOR_WB_PATTERN.search(para_lower))
+            ):
                 before = paragraphs[max(0, idx - 2) : idx]
                 after = paragraphs[idx + 1 : idx + 3]
                 window = "\n\n".join(before + [para] + after)

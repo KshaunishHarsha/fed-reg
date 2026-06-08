@@ -1,75 +1,702 @@
-# Federal Register Sentinel — Keyword Configuration
+# ═══════════════════════════════════════════════════════════════════════════════
+# Federal Register Sentinel — Keyword Configuration v2
+# Animal Legal Defense Fund | Open Paws Platform
+# Monitoring agencies: USDA, FDA, NOAA, Fish & Wildlife Service, NIH
+# ═══════════════════════════════════════════════════════════════════════════════
 #
-# anchor_terms:  A single match immediately flags a document as HIGH confidence.
-#                Edit these when a major animal law statute or term is missing.
+# ARCHITECTURE:
+#   anchor_terms              → single substring match = HIGH CONFIDENCE
+#   anchor_terms_word_boundary → single \b word-boundary match = HIGH CONFIDENCE
+#                                (abbreviations only — prevents "awa" in "award")
+#   context_terms             → each match = +1 point; reach CONTEXT_THRESHOLD (2) to pass
+#   noise_title_keywords      → NOTICE documents with these in the title are DISCARDED
+#                               before any scoring. Be conservative — false negatives hurt.
 #
-# context_terms: Each match scores +1 point. A document needs CONTEXT_THRESHOLD
-#                points (currently 2) to pass as NEEDS_CONFIRMATION.
-#                Edit these to broaden or narrow topical coverage.
+# ─────────────────────────────────────────────────────────────────────────────
+# MATCHING NOTES:
 #
-# noise_title_keywords: Documents of type NOTICE whose title contains any of
-#                       these are discarded before keyword scoring.
-#                       Edit these to suppress persistent false-positive sources.
+#   1. All matching is performed CASE-INSENSITIVELY on lowercased text.
+#
+#   2. MULTI-WORD PHRASES (e.g. "animal welfare act") are safe to substring-match
+#      because the combination is already unambiguous.
+#
+#   3. SHORT ABBREVIATIONS must go in anchor_terms_word_boundary, not here.
+#      They are matched as \bTERM\b to avoid substring collisions.
+#      ESA, MBTA, and HPA are excluded entirely — too ambiguous even with word boundaries.
+#      CITES is excluded — "cites" is a common verb; the full phrase is in anchor_terms.
+#
+#   4. PLURALS are handled automatically: "puppy mill" matches "puppy mills".
+#
+#   5. HYPHENATED VARIANTS: "cage-free" and "cage free" may both appear.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ANCHOR TERMS — SUBSTRING
+# One match = HIGH CONFIDENCE. Every term here is unambiguous in the Federal
+# Register context.
+# ═══════════════════════════════════════════════════════════════════════════════
 
 anchor_terms:
+
+  # ── FEDERAL STATUTES — Full Names ──────────────────────────────────────────
+
   - animal welfare act
-  - awa
-  - cites
-  - cafo
+  - marine mammal protection act
   - endangered species act
-  - esa
+  - migratory bird treaty act
+  - lacey act
+  - horse protection act
+  - humane methods of slaughter act
+  - humane slaughter act
+  - wild free-roaming horses and burros act
+  - animal enterprise terrorism act
+  - fur seal act
+  - bald and golden eagle protection act
+  - great ape conservation act
+  - african elephant conservation act
+  - rhinoceros and tiger conservation act
+  - shark finning prohibition act
+  - pets evacuation and transportation standards act
+  - federal meat inspection act
+  - poultry products inspection act
+  - egg products inspection act
+  - twenty-eight hour law
+  - chimpanzee health improvement maintenance and protection act
+  - convention on international trade in endangered species
+
+  # ── AGENCY NAMES — Full Forms ───────────────────────────────────────────────
+
+  - animal and plant health inspection service
+  - food safety and inspection service
+  - national marine fisheries service
+  - institutional animal care and use committee
+  - animal welfare information center
+
+  # ── FACTORY FARMING AND INTENSIVE CONFINEMENT ───────────────────────────────
+
   - factory farming
+  - factory farm
+  - concentrated animal feeding operation
+  - intensive confinement
+  - gestation crate
+  - gestation stall
+  - farrowing crate
+  - sow stall
+  - veal crate
+  - battery cage
+  - enriched colony cage
+  - cage-free
+  - furnished cage
+  - foie gras
+  - force-fed
+  - gavage
+  - beak trimming
+  - debeaking
+  - tail docking
+  - gestation housing
+
+  # ── ANIMAL RESEARCH AND EXPERIMENTATION ─────────────────────────────────────
+
   - animal testing
   - animal experimentation
-  - concentrated animal feeding operation
-  - migratory bird treaty
-  - marine mammal protection
-  - fur seal
+  - vivisection
+  - laboratory animal welfare
+  - research animal welfare
+  - guide for the care and use of laboratory animals
+  - animal care and use committee
+  - pain and distress
+  - alternatives to animal testing
+  - animal research facility
+  - registered research facility
+
+  # ── ANIMAL FIGHTING ──────────────────────────────────────────────────────────
+
   - animal fighting
-  - horse protection act
+  - cockfighting
+  - dogfighting
+  - animal fighting venture
+  - fighting bird
+  - fighting dog
+  - slashers
+
+  # ── COMPANION ANIMAL WELFARE ─────────────────────────────────────────────────
+
+  - puppy mill
+  - kitten mill
+  - high-volume breeder
+  - commercial breeder
+  - commercial dog breeder
+  - random source
+  - class b dealer
+  - class b license
+
+  # ── WILDLIFE TRADE AND TRAFFICKING ──────────────────────────────────────────
+
+  - wildlife trafficking
+  - illegal wildlife trade
+  - wildlife smuggling
+  - live animal import
+  - live animal export
+  - import of wildlife
+  - export of wildlife
+  - ivory trade
+  - ivory ban
+  - trophy import
+  - trophy export
+  - safari trophy
+
+  # ── ESA LEGAL CONCEPTS ──────────────────────────────────────────────────────
+
+  - critical habitat
+  - incidental take
+  - incidental take permit
+  - incidental take statement
+  - biological opinion
+  - jeopardy determination
+  - no jeopardy
+  - not jeopardize
+  - species listing
+  - proposed listing
+  - final listing
+  - proposed delisting
+  - final delisting
+  - candidate species
+  - petition to list
+  - petition to delist
+  - recovery plan
+  - recovery program
+  - recovery strategy
+  - conservation agreement
+  - safe harbor agreement
+  - candidate conservation agreement
+  - no surprises rule
+  - section 7 consultation
+  - section 4 listing
+  - section 10 permit
+  - 4(d) rule
+  - distinct population segment
+  - evolutionarily significant unit
+  - range-wide status review
+
+  # ── HUMANE SLAUGHTER ────────────────────────────────────────────────────────
+
   - humane slaughter
   - humane methods of slaughter
-  - animal enterprise
-  - great ape
-  - chimpanzee research
+  - humane handling
+  - ante-mortem inspection
+  - post-mortem inspection
+  - stunning requirement
+  - ritual slaughter
+  - downer animal
+  - non-ambulatory animal
+
+  # ── REGULATED ANIMAL ACTIVITIES (AWA-Defined Categories) ────────────────────
+
+  - animal dealer
+  - animal exhibitor
+  - animal transporter
+  - animal carrier
+  - regulated activity
+  - dealer license
+  - exhibitor license
+  - annual report of animals
+
+  # ── MARINE ANIMAL PROTECTION ────────────────────────────────────────────────
+
+  - shark finning
+  - shark fin
+  - shark fin ban
+  - finning prohibition
+  - whaling
+  - commercial whaling
+  - aboriginal subsistence whaling
+  - sealskin import
+  - seal hunt
+  - sea turtle take
+  - dolphin-safe
+
+  # ── FUR INDUSTRY ────────────────────────────────────────────────────────────
+
+  - fur farm
+  - fur farming
+  - mink farm
+  - fox farm
+  - fur trapping regulation
+  - trapping standard
+
+  # ── PREDATOR AND WILDLIFE MANAGEMENT ────────────────────────────────────────
+
+  - depredation order
+  - depredation permit
+  - lethal removal order
+  - aerial gunning
+  - aerial killing
+  - poison collar
+  - m-44 device
+  - leg hold trap
+  - body-gripping trap
+  - snare regulation
+  - wildlife services killing
+
+  # ── ANIMAL DISEASE ERADICATION PROGRAMS ─────────────────────────────────────
+
+  - brucellosis eradication
+  - brucellosis program
+  - scrapie eradication
+  - scrapie program
+  - scrapie elimination program
+  - chronic wasting disease
+  - bovine spongiform encephalopathy
+  - mad cow disease
+  - foot-and-mouth disease
+  - foot and mouth disease
+  - classical swine fever
+  - african swine fever
+  - newcastle disease
+  - highly pathogenic avian influenza
+  - low pathogenic avian influenza
+  - equine infectious anemia
+  - pseudorabies eradication
+  - johne's disease program
+
+  # ── HORSE AND EQUINE-SPECIFIC WELFARE ───────────────────────────────────────
+
+  - horse slaughter
+  - equine slaughter
+  - horse soring
+  - soring
+  - action device
+  - padded horse
+  - horse tripping
+  - wild horse management
+  - wild horse roundup
+  - horse gather
+  - burro management
+  - herd management area
+
+  # ── MISCELLANEOUS ──────────────────────────────────────────────────────────
+
+  - animal welfare
+  - animal rights
+  - animal cruelty
+  - cruelty to animals
+  - animal abuse
+  - animal neglect
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ANCHOR TERMS — WORD BOUNDARY (abbreviations)
+# Each term is matched as \bTERM\b (case-insensitive) to prevent substring
+# collisions. Keep this list short — only add abbreviations that are unambiguous
+# as standalone words. ESA/MBTA/HPA are excluded. CITES is excluded (verb).
+# ═══════════════════════════════════════════════════════════════════════════════
+
+anchor_terms_word_boundary:
+  - AWA      # Animal Welfare Act
+  - MMPA     # Marine Mammal Protection Act
+  - APHIS    # Animal and Plant Health Inspection Service
+  - IACUC    # Institutional Animal Care and Use Committee
+  - CAFO     # Concentrated Animal Feeding Operation
+  - FSIS     # Food Safety and Inspection Service
+  - NMFS     # National Marine Fisheries Service
+  - USFWS    # U.S. Fish and Wildlife Service
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONTEXT TERMS
+# Each match = +1 point. Needs CONTEXT_THRESHOLD (2) to advance to AI review.
+# ═══════════════════════════════════════════════════════════════════════════════
 
 context_terms:
+
+  # ── LIVESTOCK AND FARM ANIMALS ──────────────────────────────────────────────
+
   - livestock
-  - poultry
   - cattle
-  - swine
-  - equine
   - bovine
+  - swine
+  - hog
+  - pig
+  - poultry
+  - chicken
+  - broiler
+  - layer hen
+  - turkey
+  - duck
+  - goose
+  - equine
+  - horse
+  - mule
+  - donkey
+  - burro
+  - sheep
+  - lamb
+  - goat
+  - bison
+  - feedlot
+  - feed yard
+  - pasture
+  - grazing
+  - rangeland
+  - range management
+  - herd
+  - flock
+  - animal husbandry
+  - animal production
+  - animal agriculture
+  - livestock producer
+  - livestock market
+  - livestock auction
+  - stockyard
+  - packing plant
+  - meatpacking
+  - rendering
+  - rendering plant
+
+  # ── WILD ANIMALS AND SPECIES ─────────────────────────────────────────────────
+
   - wildlife
-  - habitat
-  - captive
-  - slaughter
-  - trapping
-  - hunting
-  - fur
-  - aquaculture
-  - fishery
-  - marine species
-  - processing facility
-  - animal feed
-  - veterinary
-  - zoological
-  - primate
-  - rodent
-  - laboratory animal
-  - animal by-product
+  - wild animal
+  - migratory
+  - migratory bird
   - game species
+  - nongame species
+  - predator
+  - raptor
+  - waterfowl
+  - songbird
+  - shorebird
+  - neotropical
+  - wild horse
+  - feral horse
+  - feral cat
+  - feral animal
+  - feral population
+  - wolf
+  - gray wolf
+  - grizzly bear
+  - black bear
+  - mountain lion
+  - cougar
+  - puma
+  - jaguar
+  - ocelot
+  - lynx
+  - bobcat
+  - coyote
+  - deer
+  - elk
+  - moose
+  - caribou
+  - bighorn sheep
+  - pronghorn
+  - bald eagle
+  - golden eagle
+  - whooping crane
+  - sandhill crane
+  - sage grouse
+  - greater sage-grouse
+  - spotted owl
+  - sea turtle
+  - loggerhead turtle
+  - leatherback turtle
+  - hawksbill turtle
+  - sturgeon
+  - salmon
+  - trout
+  - steelhead
+  - paddlefish
+  - amphibian
+  - reptile
+  - tortoise
+  - desert tortoise
+  - gopher tortoise
+  - bat
+  - primate
+  - nonhuman primate
+  - great ape
+  - chimpanzee
+  - gorilla
+  - orangutan
+  - gibbon
+  - macaque
+  - rodent
+  - rabbit
+  - guinea pig
+
+  # ── MARINE AND AQUATIC SPECIES ────────────────────────────────────────────
+
+  - marine mammal
+  - cetacean
+  - whale
+  - dolphin
+  - porpoise
+  - seal
+  - sea lion
+  - walrus
+  - manatee
+  - dugong
+  - polar bear
+  - sea otter
+  - bycatch
+  - incidental catch
+  - incidental bycatch
+  - fishery
+  - commercial fishery
+  - aquaculture
+  - fish farm
+  - mariculture
+  - trawling
+  - bottom trawl
+  - longline
+  - drift net
+  - gillnet
+  - observer program
+
+  # ── HABITAT AND ECOLOGICAL TERMS ─────────────────────────────────────────
+
+  - habitat
+  - habitat loss
+  - habitat destruction
+  - habitat fragmentation
+  - wildlife corridor
+  - migration corridor
+  - riparian
+  - riparian habitat
+  - wetland
+  - estuary
+  - old growth
+  - old-growth forest
+  - temperate rainforest
+  - native species
+  - invasive species
+  - non-native species
+  - species of concern
+  - protected species
+  - population viability
+
+  # ── CAPTIVE AND EXOTIC ANIMALS ───────────────────────────────────────────
+
+  - captive animal
+  - captive wildlife
+  - captive bred
+  - captive breeding
+  - captive propagation
+  - companion animal
+  - shelter animal
+  - stray animal
+  - exotic animal
+  - exotic species
+  - exotic pet
+  - zoological
+  - zoological park
+  - zoo
+  - aquarium
+  - circus animal
+  - animal sanctuary
+  - wildlife sanctuary
+  - wildlife rehabilitation
+  - sanctuary
+
+  # ── VETERINARY AND ANIMAL HEALTH ─────────────────────────────────────────
+
+  - veterinary
+  - veterinarian
+  - animal health
+  - animal disease
+  - zoonotic
+  - zoonosis
+  - animal vaccination
+  - veterinary biologics
+  - feed additive
+  - animal feed
+  - growth hormone
+  - hormone implant
+  - ractopamine
+  - antimicrobial resistance
+  - antibiotic use in animals
+  - animal nutrition
+  - herd health
+  - flock health
+  - disease surveillance
+  - animal movement
+
+  # ── HUNTING, TRAPPING, AND KILLING ───────────────────────────────────────
+
+  - hunting
+  - trapping
+  - snare
   - trophy hunting
+  - sport hunting
+  - subsistence hunting
+  - commercial hunting
+  - poaching
+  - depredation
+  - lethal control
+  - lethal management
+  - predator control
+  - culling
+  - kill permit
+  - take permit
+  - harvest
+
+  # ── TRADE AND PERMITS ───────────────────────────────────────────────────
+
   - import permit
+  - export permit
+  - wildlife permit
+  - fur
+  - pelt
+  - hide
+  - ivory
+  - bone meal
+  - animal by-product
+  - animal byproduct
+  - rendering
+
+  # ── RESEARCH AND LABORATORY ANIMALS ─────────────────────────────────────
+
+  - laboratory animal
+  - research animal
+  - animal model
+  - in vivo
+  - toxicity testing
+  - bioassay
+  - animal study
+  - rodent study
+  - primate study
+  - three rs
+  - replacement reduction refinement
+  - pain and distress
+  - humane endpoint
+
+  # ── SLAUGHTER AND PROCESSING ────────────────────────────────────────────
+
+  - slaughter
+  - slaughterhouse
+  - processing facility
+  - processing plant
+  - packing plant
+  - kill floor
+  - ante-mortem
+  - post-mortem
+  - dressing percentage
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# NOISE TITLE KEYWORDS
+# Applied to NOTICE documents ONLY, before keyword scoring.
+# Only include terms NEVER found in an animal-law relevant notice title.
+# When in doubt, leave it out — a missed document is worse than a false positive.
+# ═══════════════════════════════════════════════════════════════════════════════
 
 noise_title_keywords:
+
+  # ── AVIATION AND AIRSPACE ────────────────────────────────────────────────
+
   - airspace
-  - navigation
+  - air traffic control
+  - air route
+  - instrument approach procedure
+  - instrument flight rule
+  - instrument landing system
+  - airport improvement
+  - runway safety
+  - runway protection
   - flight path
-  - presidential determination
-  - advisory committee meeting
-  - agenda
-  - coast guard
-  - traffic separation
-  - vessel
-  - anchorage
+  - obstacle clearance
+
+  # ── MARITIME NAVIGATION (non-animal) ────────────────────────────────────
+  # "vessel" and "navigation" alone are NOT here — MMPA docs reference both.
+
+  - drawbridge operation
+  - drawbridge regulation
+  - swing bridge
+  - bascule bridge
+  - anchorage regulation
+  - traffic separation scheme
+  - aids to navigation
+  - lighthouse
+  - buoy placement
+  - inland waterway rule
+
+  # ── FINANCIAL AND SECURITIES ─────────────────────────────────────────────
+
+  - securities offering
+  - securities registration
+  - bond issuance
+  - mortgage-backed security
+  - interest rate determination
+  - bank examination
+  - savings institution
+  - credit union charter
+  - thrift charter
+  - capital adequacy
+
+  # ── TELECOMMUNICATIONS AND SPECTRUM ──────────────────────────────────────
+
+  - spectrum allocation
+  - frequency assignment
+  - broadcast license
+  - radio station license
+  - television broadcast
+  - broadband spectrum
+  - satellite orbit
+
+  # ── NUCLEAR AND RADIATION ────────────────────────────────────────────────
+
+  - nuclear reactor
+  - nuclear facility license
+  - nuclear power plant
+  - radioactive material license
+  - radiation protection standard
+  - spent nuclear fuel
+
+  # ── TRANSPORTATION INFRASTRUCTURE ────────────────────────────────────────
+  # "highway", "road", "railroad" excluded — livestock transport uses these.
+
+  - highway construction permit
+  - bridge construction project
+  - tunnel construction
+  - grade crossing
+
+  # ── INTELLECTUAL PROPERTY ────────────────────────────────────────────────
+
+  - patent issuance
+  - patent grant notice
+  - trademark registration notice
+  - copyright registration
+
+  # ── ELECTORAL AND FEDERAL PAY ─────────────────────────────────────────────
+
+  - federal pay schedule
+  - locality pay adjustment
+  - senior executive service pay
+  - election results certification
+  - ballot certification
+  - campaign finance reporting
+
+  # ── IMMIGRATION ──────────────────────────────────────────────────────────
+
+  - visa bulletin
+  - visa availability
+  - alien registration
+  - immigration fee schedule
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BONUS: CFR PART CITATIONS
+# If your regex engine scans document text, these CFR references are
+# high-precision anchors. Add to anchor_terms or a separate CFR layer.
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# cfr_anchor_references:
+#   9 CFR Part 1-3  # AWA definitions, regulations, standards
+#   9 CFR Part 11   # Horse Protection Act
+#   9 CFR Parts 301-381  # Federal Meat & Poultry Inspection (FSIS)
+#   50 CFR Part 17  # ESA threatened/endangered lists + permits
+#   50 CFR Part 18  # Marine Mammal Protection Act
+#   50 CFR Part 21  # Migratory bird permits
+#   50 CFR Part 23  # CITES implementation
+#   50 CFR Part 402 # ESA Section 7 interagency consultation
