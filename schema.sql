@@ -132,10 +132,6 @@ CREATE TRIGGER trg_summaries_updated_at
 -- PERMISSIONS
 -- Required because Phase 1 uses the Supabase REST API (anon key)
 -- ============================================================
-GRANT ALL PRIVILEGES ON TABLE documents TO anon;
-GRANT ALL PRIVILEGES ON TABLE summaries TO anon;
-GRANT ALL PRIVILEGES ON TABLE filter_audit TO anon;
-GRANT USAGE, SELECT ON SEQUENCE filter_audit_id_seq TO anon;
 
 
 -- ============================================================
