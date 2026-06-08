@@ -3,6 +3,25 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout>
+
+<!-- Login overlay — hidden until auth check runs -->
+<div id="login-overlay" style="display:none">
+  <div class="login-card">
+    <div class="login-logos">
+      <img src="/openpawslogo.png" alt="OpenPaws Logo" />
+      <div class="login-logo-divider"></div>
+      <img src="/ALDF_Logos_full_vertical_color_RGB.jpg" alt="ALDF Logo" />
+    </div>
+    <p class="login-title">Federal Register Sentinel</p>
+    <p class="login-sub">Demo environment · sign in to continue</p>
+    <form id="login-form" novalidate>
+      <input id="pw-input" type="password" placeholder="Password" autocomplete="current-password" />
+      <button type="submit" class="btn btn-teal" style="width:100%;justify-content:center;margin-top:4px;">Sign in</button>
+      <p id="login-err" class="status-msg err" style="text-align:center;"></p>
+    </form>
+  </div>
+</div>
+
 <main>
 
   <!-- NAV -->
@@ -494,6 +513,75 @@ import Layout from '../layouts/Layout.astro';
     font-size: 16px;
   }
 
+  /* ── Login overlay ──────────────────────────── */
+  #login-overlay {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .login-card {
+    width: 100%;
+    max-width: 380px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 36px 32px 28px;
+    background: var(--white);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .login-logos {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 28px;
+  }
+  .login-logos img { height: 52px; object-fit: contain; }
+  .login-logo-divider {
+    width: 1px;
+    height: 40px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+  .login-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--black);
+    text-align: center;
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+  }
+  .login-sub {
+    font-size: 12px;
+    color: var(--grey);
+    text-align: center;
+    margin-bottom: 24px;
+    font-weight: 500;
+  }
+  #login-form input[type="password"] {
+    width: 100%;
+    padding: 10px 13px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    color: var(--black);
+    background: var(--white);
+    outline: none;
+    transition: border-color 0.15s;
+    display: block;
+    margin-bottom: 10px;
+  }
+  #login-form input[type="password"]:focus { border-color: var(--teal); }
+
   /* ── Footer ──────────────────────────────────── */
   footer {
     margin-top: 48px;
@@ -511,7 +599,30 @@ import Layout from '../layouts/Layout.astro';
 </style>
 
 <script>
-  const API = import.meta.env.PUBLIC_API_URL ?? '';
+  const API      = import.meta.env.PUBLIC_API_URL ?? '';
+  const PASSWORD = import.meta.env.PUBLIC_PASSWORD ?? '';
+
+  // ── Auth gate ─────────────────────────────────
+  (function initAuth() {
+    if (!PASSWORD) return; // no password configured — skip login
+    const overlay = document.getElementById('login-overlay');
+    const mainEl  = document.querySelector('main');
+    if (sessionStorage.getItem('sentinel_auth') !== PASSWORD) {
+      overlay.style.display = 'flex';
+      mainEl.style.display  = 'none';
+    }
+    document.getElementById('login-form').addEventListener('submit', e => {
+      e.preventDefault();
+      if (document.getElementById('pw-input').value === PASSWORD) {
+        sessionStorage.setItem('sentinel_auth', PASSWORD);
+        overlay.style.display = 'none';
+        mainEl.style.display  = '';
+        loadSubs();
+      } else {
+        document.getElementById('login-err').textContent = 'Incorrect password.';
+      }
+    });
+  })();
 
   // ── Load subscriber list ──────────────────────
   async function loadSubs() {
@@ -627,7 +738,7 @@ import Layout from '../layouts/Layout.astro';
 
       // Step 2: poll /run/status/{job_id} every 3 seconds until done or error
       let elapsed = 0;
-      const POLL_MS = 3000;
+      const POLL_MS = 10000;
       const MAX_WAIT_MS = 15 * 60 * 1000; // 15 min hard ceiling
 
       await new Promise((resolve, reject) => {
