@@ -109,7 +109,7 @@ async def demo_run(request: DemoRequest, background_tasks: BackgroundTasks):
 
 
 @app.post("/run", status_code=202)
-async def run(date: str = None, background_tasks: BackgroundTasks = None):
+async def run(background_tasks: BackgroundTasks, date: str = None):
     """
     Daily cron / demo entry point.
     Returns 202 immediately with a job_id. The full Phase 1 → 2 → 3 pipeline
