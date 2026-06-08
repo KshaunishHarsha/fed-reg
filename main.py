@@ -82,7 +82,9 @@ async def frontend():
     astro_index = _ASTRO_DIST / "index.html"
     if astro_index.exists():
         return HTMLResponse(astro_index.read_text(encoding="utf-8"))
-    return HTMLResponse(_LEGACY_FRONTEND.read_text(encoding="utf-8"))
+    if _LEGACY_FRONTEND.exists():
+        return HTMLResponse(_LEGACY_FRONTEND.read_text(encoding="utf-8"))
+    return HTMLResponse("<h1>Federal Register Sentinel</h1><p>Frontend not built. Run <code>cd sentinel-frontend && npm run build</code>.</p>", status_code=200)
 
 
 class DemoRequest(BaseModel):
