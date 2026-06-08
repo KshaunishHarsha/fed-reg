@@ -167,7 +167,7 @@
             {# Agency — VARIABLE: entry.agency_names #}
             <p style="margin: 0 0 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
               text-transform: uppercase; color: #9CA3AF; line-height: 1;">
-              {{ entry.agency_names | join(' &nbsp;·&nbsp; ') }}
+              {{ entry.agency_names | join(' &nbsp;·&nbsp; ') | safe }}
             </p>
             {# Regulation category + publication date + summarization tier #}
             <p style="margin: 0 0 12px; font-size: 11px; color: #9CA3AF; line-height: 1.4;">
@@ -388,7 +388,7 @@
             {# Agency — VARIABLE: entry.agency_names #}
             <p style="margin: 0 0 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
               text-transform: uppercase; color: #9CA3AF; line-height: 1;">
-              {{ entry.agency_names | join(' &nbsp;·&nbsp; ') }}
+              {{ entry.agency_names | join(' &nbsp;·&nbsp; ') | safe }}
             </p>
             {# Regulation category + publication date + summarization tier #}
             <p style="margin: 0 0 12px; font-size: 11px; color: #9CA3AF; line-height: 1.4;">
@@ -613,7 +613,7 @@
             {# Agency — VARIABLE: entry.agency_names #}
             <p style="margin: 0 0 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
               text-transform: uppercase; color: #9CA3AF; line-height: 1;">
-              {{ entry.agency_names | join(' &nbsp;·&nbsp; ') }}
+              {{ entry.agency_names | join(' &nbsp;·&nbsp; ') | safe }}
             </p>
             {# Regulation category + publication date + summarization tier #}
             <p style="margin: 0 0 12px; font-size: 11px; color: #9CA3AF; line-height: 1.4;">
