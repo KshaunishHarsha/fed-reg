@@ -44,10 +44,12 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS — allows the Astro dev server (localhost:4321) to call the API
+# CORS — localhost for dev, plus any origins listed in ALLOWED_ORIGINS (comma-separated)
+import os as _os
+_extra_origins = [o.strip() for o in _os.environ.get("ALLOWED_ORIGINS", "").split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4321", "http://localhost:3000"],
+    allow_origins=["http://localhost:4321", "http://localhost:3000"] + _extra_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -511,7 +511,7 @@ import Layout from '../layouts/Layout.astro';
 </style>
 
 <script>
-  const API = '';
+  const API = import.meta.env.PUBLIC_API_URL ?? '';
 
   // ── Load subscriber list ──────────────────────
   async function loadSubs() {
