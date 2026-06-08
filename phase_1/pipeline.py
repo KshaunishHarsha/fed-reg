@@ -1,6 +1,7 @@
 from datetime import date
 from typing import List
 
+import config
 from ai_verification import verify_document
 from database import is_already_processed, log_audit_entry, save_confirmed_document
 from ingestion import fetch_documents
@@ -11,6 +12,7 @@ from models import ConfirmedDocument
 def run_pipeline(target_date=None, dry_run: bool = False) -> List[ConfirmedDocument]:
     run_date = target_date or date.today()
     print(f"\n[Pipeline] Starting run for {run_date}")
+    config.load_keywords_from_db()
     if dry_run:
         print("[Pipeline] DRY RUN — no AI calls or DB writes")
 

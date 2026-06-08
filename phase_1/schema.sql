@@ -105,7 +105,24 @@ CREATE TRIGGER trg_summaries_updated_at
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 
--- TABLE 4: mailing_list
+-- TABLE 4: keywords
+-- Anchor, context, and noise-filter terms loaded by Phase 1 at pipeline start.
+-- list_type: 'anchor' | 'anchor_wb' | 'context' | 'noise_title'
+-- anchor_wb terms are matched with \b word boundaries (abbreviations).
+-- Seed from keywords.yaml using phase_1/seed_keywords.py.
+CREATE TABLE keywords (
+    id          BIGSERIAL PRIMARY KEY,
+    term        TEXT NOT NULL,
+    list_type   TEXT NOT NULL CHECK (list_type IN ('anchor', 'anchor_wb', 'context', 'noise_title')),
+    enabled     BOOLEAN NOT NULL DEFAULT true,
+    created_at  TIMESTAMPTZ DEFAULT now(),
+    UNIQUE (term, list_type)
+);
+
+CREATE INDEX idx_keywords_active ON keywords (list_type) WHERE enabled = true;
+
+
+-- TABLE 5: mailing_list
 -- Subscriber addresses for the daily digest email.
 -- Decoupled from test_recipients.yaml — this is the production list.
 CREATE TABLE mailing_list (

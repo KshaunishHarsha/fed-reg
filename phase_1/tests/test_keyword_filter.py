@@ -30,7 +30,7 @@ def _doc(**kwargs) -> RawDocument:
 # ---------------------------------------------------------------------------
 
 def test_notice_with_noise_keyword_is_dropped():
-    doc = _doc(type="NOTICE", title="Coast Guard Navigation Advisory")
+    doc = _doc(type="NOTICE", title="Airspace Redesign Instrument Flight Rule Update")
     assert apply_keyword_filter(doc) is None
 
 
