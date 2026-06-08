@@ -191,6 +191,55 @@ anchor_terms:
   - downer animal
   - non-ambulatory animal
 
+  # ── LIVESTOCK WELFARE LEGISLATION AND SPECIFIC PRACTICES ────────────────────
+
+  - preventing animal cruelty and torture act
+  - prevention of farm animal cruelty act
+  - farm system reform act
+  - fairness for farmers
+  - pigs act
+  - farm bill animal welfare
+  - protecting america's food exports act
+  - safe meat and poultry inspection act
+  - new markets for state-inspected meat and poultry act
+  - chick culling
+  - live chick shredding
+  - maceration of chicks
+  - gassing of hens
+  - spent hen disposal
+  - fast-growing breed
+  - broiler welfare
+  - low-welfare breed
+  - live export of animals
+  - live animal export
+  - export of live animals
+  - long-distance transport of livestock
+  - transport of livestock
+  - livestock transport standard
+  - livestock transport welfare
+  - slaughter without stunning
+  - gas stunning
+  - controlled atmosphere stunning
+  - controlled atmosphere killing
+  - low atmospheric pressure stunning
+  - higher welfare standard
+  - farm animal welfare standard
+
+  # ── AGRICULTURAL FINANCING OF HARMFUL PRACTICES ──────────────────────────────
+
+  - farm loan for confinement
+  - usda loan to cafo
+  - farm service agency loan
+  - agricultural credit for expansion
+  - cafo financing
+  - factory farm subsidy
+  - industrial livestock subsidy
+  - commodity credit corporation loan
+  - meat industry subsidy
+  - poultry industry loan
+  - pork industry financing
+  - livestock industry loan guarantee
+
   # ── REGULATED ANIMAL ACTIVITIES (AWA-Defined Categories) ────────────────────
 
   - animal dealer
@@ -353,6 +402,32 @@ context_terms:
   - meatpacking
   - rendering
   - rendering plant
+
+  # ── AGRICULTURAL SUBSIDIES LINKED TO LIVESTOCK ──────────────────────────────
+  # These are CONTEXT terms — each scores +1 point. They are only meaningful
+  # alongside other livestock/animal terms and never fire in isolation.
+
+  - commodity support payment
+  - farm commodity program
+  - price support program
+  - direct payment to farmers
+  - agricultural subsidy
+  - crop insurance subsidy
+  - conservation reserve program
+  - environmental quality incentives program
+  - livestock conservation incentive
+  - farm service agency
+  - usda farm program
+  - agricultural marketing loan
+  - loan deficiency payment
+  - usda rural development loan
+  - livestock loan guarantee
+  - farm credit system
+  - agricultural risk coverage
+  - price loss coverage
+  - livestock indemnity program
+  - livestock forage disaster program
+  - emergency livestock assistance program
 
   # ── WILD ANIMALS AND SPECIES ─────────────────────────────────────────────────
 
