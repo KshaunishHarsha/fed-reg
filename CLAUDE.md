@@ -9,6 +9,8 @@
 
 Automated regulatory monitoring tool for the **Animal Legal Defense Fund (ALDF)**, integrated into their **Open Paws** platform. Replaces manual daily Federal Register review by attorneys and policy staff.
 
+Built by a two-person team. Primary stakeholder/reviewer: **Chris** (ALDF). Feedback from Chris drives the next iteration of work.
+
 Every morning the full system:
 1. Pulls that day's Federal Register publications from 7 target agencies (Phase 1)
 2. Filters to animal-relevant documents through a 4-layer keyword + AI pipeline (Phase 1)
@@ -61,18 +63,25 @@ fed-reg/
 ├── brief.md                # Project brief — gitignored
 ├── project-plan.md         # Phase 2 build plan — gitignored
 │
-├── frontend/               # Demo UI (served by FastAPI at GET /)
+├── frontend/               # Legacy demo UI (fallback only — Astro is primary)
 │   └── index.html          # Self-contained single-page demo — no build step
+│
+├── sentinel-frontend/      # Astro static site — primary demo UI, deployed to Vercel
+│   ├── src/pages/index.astro   # Main page: login gate + pipeline trigger + subscriber panel
+│   ├── src/layouts/Layout.astro
+│   ├── public/             # ALDF + OpenPaws logos
+│   └── astro.config.mjs
 │
 ├── phase_1/                # Ingestion + filtering
 │   ├── config.py           # All constants: agency slugs, keywords, thresholds, model
+│   ├── keywords.yaml       # Keyword source of truth — anchor, anchor_wb, context, noise_title
 │   ├── models.py           # RawDocument → FilteredDocument → ConfirmedDocument
 │   ├── ingestion.py        # Layer 1: FR API fetch + dedup
 │   ├── keyword_filter.py   # Layer 2 + 2a: noise filter, keyword scoring, PDF scan
 │   ├── ai_verification.py  # Layer 3: GPT-4o-mini via OpenRouter + instructor
-│   ├── database.py         # supabase-py helpers (synchronous)
+│   ├── database.py         # psycopg2 helpers (synchronous) — Railway Postgres via DATABASE_URL
 │   ├── pipeline.py         # CLI entry point: --date, --dry-run
-│   ├── schema.sql          # Authoritative full-system DB schema (run once in Supabase)
+│   ├── schema.sql          # Authoritative full-system DB schema (run once in Railway SQL)
 │   ├── requirements.txt
 │   └── tests/              # 43 tests
 │
@@ -115,14 +124,14 @@ fed-reg/
 | Variable | Used By | Purpose |
 |----------|---------|---------|
 | `OPENROUTER_API_KEY` | Phase 1 `ai_verification.py`, Phase 2 `summarizer.py` | OpenRouter key → model `openai/gpt-4o-mini` |
-| `SUPABASE_URL` | Phase 1 `database.py` | Supabase project REST URL (supabase-py client) |
-| `SUPABASE_KEY` | Phase 1 `database.py` | Supabase anon or service role key |
-| `DATABASE_URL` | Phase 2 `database.py`, Phase 3 `db.py` | `postgresql+asyncpg://...` — async SQLAlchemy direct Postgres |
+| `DATABASE_URL` | Phase 1 `database.py` (psycopg2), Phase 2 `database.py`, Phase 3 `db.py` | Railway Postgres. Phase 1 strips `+asyncpg` prefix internally; all other phases use `postgresql+asyncpg://...` |
 | `SMTP_HOST` | Phase 3 `mail_test.py` | e.g. `smtp.gmail.com` |
 | `SMTP_PORT` | Phase 3 `mail_test.py` | e.g. `465` (SSL) |
 | `SMTP_USER` | Phase 3 `mail_test.py` | Gmail address / SMTP login |
 | `SMTP_PASSWORD` | Phase 3 `mail_test.py` | Gmail App Password (16 chars) |
 | `SMTP_FROM` | Phase 3 `mail_test.py` | Sender display string |
+| `ALLOWED_ORIGINS` | `main.py` CORS middleware | Comma-separated allowed origins. Set to Vercel URL in production. |
+| `PUBLIC_PASSWORD` | `sentinel-frontend` (Astro build-time) | Demo login password. Set in Vercel env vars. Empty = gate disabled. |
 
 How each phase loads `.env`:
 - Phase 1 + 2: `load_dotenv(Path(__file__).parent.parent / ".env")`
@@ -137,7 +146,7 @@ No inter-phase HTTP URLs needed. All phases run in the same process via `orchest
 
 ## Database
 
-Authoritative schema: **`phase_1/schema.sql`** — run once in Supabase SQL Editor.
+Authoritative schema: **`phase_1/schema.sql`** — run once in Railway SQL Editor.
 
 | Table | Writer | Purpose |
 |-------|--------|---------|
@@ -167,7 +176,7 @@ Phase 1 owns all writes to `documents` (except `pipeline_state`). Phase 2 owns a
 
 ```
 GET /  (main.py)
-    └── Serves frontend/index.html (demo UI)
+    └── Serves sentinel-frontend/dist/ (Astro build) — falls back to frontend/index.html if dist absent
 
 POST /demo/run  (main.py)          ← demo only; not in production
     ├── phase_3.mailing_list.add_subscriber(email)   [upsert to DB]
@@ -208,7 +217,7 @@ POST /run  (main.py)               ← production cron entry point
 
 | Endpoint | Source | Purpose |
 |----------|--------|---------|
-| `GET /` | `main.py` | Demo frontend (served from `frontend/index.html`) |
+| `GET /` | `main.py` | Demo frontend (Astro `sentinel-frontend/dist/`; legacy `frontend/index.html` as fallback) |
 | `POST /demo/run` | `main.py` | **Demo only.** Subscribe email + trigger pipeline as background task. |
 | `POST /run?date=YYYY-MM-DD` | `main.py` → `orchestrator.py` | **Primary cron entry point.** Full Phase 1→2→3 in-process. |
 | `GET /health` | `main.py` | Liveness check |
@@ -231,11 +240,12 @@ POST /run  (main.py)               ← production cron entry point
 | Component | Status | Notes |
 |-----------|--------|-------|
 | `main.py` + `orchestrator.py` | ✅ Complete | Unified app, direct in-process phase calls |
-| **Frontend** — Demo UI | ✅ Complete | `frontend/index.html` served at `GET /`; `POST /demo/run` handles subscribe + pipeline trigger |
-| **Mailing list** — DB-backed subscribers | ✅ Complete | `mailing_list` Supabase table; `phase_3/mailing_list.py`; orchestrator reads from DB, falls back to YAML |
-| **Phase 1** — Ingestion + Filtering | ✅ Complete | 43 tests passing |
+| **Frontend** — Astro Demo UI | ✅ Complete | `sentinel-frontend/` deployed to Vercel; password gate via `PUBLIC_PASSWORD`; `POST /demo/run` handles subscribe + pipeline trigger |
+| **Mailing list** — DB-backed subscribers | ✅ Complete | `mailing_list` table (Railway); `phase_3/mailing_list.py`; orchestrator reads from DB, falls back to YAML |
+| **Phase 1** — Ingestion + Filtering | ✅ Complete | 43 tests passing; migrated from supabase-py to psycopg2 (Railway Postgres) |
 | **Phase 2** — LLM Summarization | ✅ Complete | 69 tests passing |
 | **Phase 3** — Validation, Digest, Email | ✅ Steps 1–3 complete | Step 4 (`platform_handoff.py`) not yet implemented |
+| **Deployment** | ✅ Complete | Backend on Railway (port 8000); Astro frontend on Vercel; `ALLOWED_ORIGINS` controls CORS |
 
 ---
 
@@ -259,8 +269,11 @@ FR's `document_number` is the unique ID. It's the primary key everywhere. `is_al
 ### context_block stored in DB
 Phase 2 Tier 3 (>50 page docs) reuses the `context_block` Phase 1 assembled. Avoids re-downloading PDFs.
 
-### Supabase upsert uses ignore_duplicates
-`save_confirmed_document()` → `upsert(..., ignore_duplicates=True)` = ON CONFLICT DO NOTHING. Never overwrites.
+### Phase 1 DB uses psycopg2 (not SQLAlchemy)
+Phase 1 is synchronous. `database.py` connects via `psycopg2` using `DATABASE_URL` (strips `+asyncpg` prefix). All functions open a fresh connection, use a `RealDictCursor`, and close in a `try/finally`. `save_confirmed_document()` uses `INSERT ... ON CONFLICT (document_number) DO NOTHING`. Never overwrites.
+
+### Keyword config — YAML is the only source of truth
+`keywords.yaml` has four lists: `anchor_terms` (substring match), `anchor_terms_word_boundary` (regex `\b`), `context_terms`, `noise_title_keywords`. All terms are lowercased at load time in `config.py`. No DB table for keywords — YAML is it. Abbreviations (AWA, APHIS, NMFS, etc.) are in `anchor_terms_word_boundary` to avoid false positives (e.g., "award"). CITES excluded entirely since "cites" is a common verb.
 
 ### Audit log has no FK to documents
 `filter_audit` logs every doc reaching Layer 3, including those dropped (`is_relevant=False`). A FK would prevent logging drops.

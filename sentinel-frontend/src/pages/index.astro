@@ -68,14 +68,15 @@ import Layout from '../layouts/Layout.astro';
 
       <p class="panel-label">Run pipeline</p>
       <p class="panel-sub">Fetch today's Federal Register, filter, summarise, and send the digest to all subscribers.</p>
+      <div class="demo-banner">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span><strong>Demo only.</strong> In production, the pipeline runs automatically once per day with no manual trigger — one digest per day's Federal Register publications, delivered every morning.</span>
+      </div>
       <div style="display: flex; gap: 8px; align-items: center;">
         <input type="date" id="run-date" class="date-input" />
         <button id="run-btn" class="btn btn-outline">Send digest</button>
       </div>
       <p id="run-status" class="status-msg" role="alert" aria-live="polite"></p>
-      <p style="font-size:12px;color:var(--grey);margin-top:10px;line-height:1.5;border-top:1px solid var(--border);padding-top:10px;">
-        <strong style="color:var(--muted);">Demo only.</strong> In production this runs automatically once per day, sending one digest for that day's Federal Register publications with no manual trigger.
-      </p>
     </div>
 
     <!-- Right: live subscriber list -->
@@ -321,6 +322,22 @@ import Layout from '../layouts/Layout.astro';
     background: var(--border);
     margin: 20px 0;
   }
+
+  .demo-banner {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    background: rgba(0, 108, 103, 0.05);
+    border: 1px solid rgba(0, 108, 103, 0.2);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  .demo-banner svg { color: var(--teal); }
+  .demo-banner strong { color: var(--teal); }
 
   /* Spinner inside button */
   .spin {
