@@ -1,61 +1,85 @@
 import os
 from datetime import date
+from pathlib import Path
 from typing import List
 
-from supabase import create_client, Client
+import psycopg2
+import psycopg2.extras
+from dotenv import load_dotenv
 
 from models import ConfirmedDocument
 
+load_dotenv(Path(__file__).parent.parent / ".env")
 
-def _client() -> Client:
-    url = os.environ["SUPABASE_URL"]
-    key = os.environ["SUPABASE_KEY"]
-    return create_client(url, key)
+
+def _get_connection():
+    url = os.environ["DATABASE_URL"]
+    # Strip SQLAlchemy driver prefix if present — psycopg2 expects plain postgresql://
+    url = url.replace("postgresql+asyncpg://", "postgresql://")
+    return psycopg2.connect(url)
 
 
 def is_already_processed(document_number: str) -> bool:
-    """Return True if document_number already exists in documents table."""
-    result = (
-        _client()
-        .table("documents")
-        .select("document_number")
-        .eq("document_number", document_number)
-        .execute()
-    )
-    return len(result.data) > 0
+    conn = _get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT 1 FROM documents WHERE document_number = %s LIMIT 1",
+                (document_number,),
+            )
+            return cur.fetchone() is not None
+    finally:
+        conn.close()
 
 
 def save_confirmed_document(doc: ConfirmedDocument) -> None:
-    """Upsert confirmed document into documents table. On conflict, do nothing."""
-    row = {
-        "document_number": doc.document_number,
-        "title": doc.title,
-        "abstract": doc.abstract,
-        "agency_names": doc.agency_names,
-        "document_type": doc.document_type,
-        "type": doc.type,
-        "subtype": doc.subtype,
-        "page_length": doc.page_length,
-        "html_url": doc.html_url,
-        "pdf_url": doc.pdf_url,
-        "comment_url": doc.comment_url,
-        "comments_close_on": doc.comments_close_on.isoformat() if doc.comments_close_on else None,
-        "effective_on": doc.effective_on.isoformat() if doc.effective_on else None,
-        "significant": doc.significant,
-        "publication_date": doc.publication_date.isoformat(),
-        "confidence": doc.confidence,
-        "is_relevant": doc.is_relevant,
-        "regulation_category": doc.regulation_category,
-        "filter_reason": doc.filter_reason,
-        "context_block": doc.context_block,
-        "pipeline_state": "INGESTED",
-    }
-    (
-        _client()
-        .table("documents")
-        .upsert(row, on_conflict="document_number", ignore_duplicates=True)
-        .execute()
-    )
+    conn = _get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO documents (
+                    document_number, title, abstract, agency_names, document_type,
+                    type, subtype, page_length, html_url, pdf_url, comment_url,
+                    comments_close_on, effective_on, significant, publication_date,
+                    confidence, is_relevant, regulation_category, filter_reason,
+                    context_block, pipeline_state
+                ) VALUES (
+                    %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s,
+                    %s, %s, %s, %s,
+                    %s, %s
+                )
+                ON CONFLICT (document_number) DO NOTHING
+                """,
+                (
+                    doc.document_number,
+                    doc.title,
+                    doc.abstract,
+                    doc.agency_names,
+                    doc.document_type,
+                    doc.type,
+                    doc.subtype,
+                    doc.page_length,
+                    doc.html_url,
+                    doc.pdf_url,
+                    doc.comment_url,
+                    doc.comments_close_on.isoformat() if doc.comments_close_on else None,
+                    doc.effective_on.isoformat() if doc.effective_on else None,
+                    doc.significant,
+                    doc.publication_date.isoformat(),
+                    doc.confidence,
+                    doc.is_relevant,
+                    doc.regulation_category,
+                    doc.filter_reason,
+                    doc.context_block,
+                    "INGESTED",
+                ),
+            )
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def log_audit_entry(
@@ -68,29 +92,44 @@ def log_audit_entry(
     was_cached: bool,
     run_date: date,
 ) -> None:
-    """Insert a row into filter_audit for every document that reaches Layer 3."""
-    row = {
-        "document_number": document_number,
-        "title": title,
-        "layer2_confidence": layer2_confidence,
-        "layer2_score": layer2_score,
-        "layer3_decision": layer3_decision,
-        "layer3_reason": layer3_reason,
-        "was_cached": was_cached,
-        "run_date": run_date.isoformat(),
-    }
-    _client().table("filter_audit").insert(row).execute()
+    conn = _get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO filter_audit (
+                    document_number, title, layer2_confidence, layer2_score,
+                    layer3_decision, layer3_reason, was_cached, run_date
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    document_number,
+                    title,
+                    layer2_confidence,
+                    layer2_score,
+                    layer3_decision,
+                    layer3_reason,
+                    was_cached,
+                    run_date.isoformat(),
+                ),
+            )
+        conn.commit()
+    finally:
+        conn.close()
 
 
-# Phase 2 read interface — the only function Phase 2 should call.
 def get_confirmed_documents_for_date(run_date: date) -> List[dict]:
-    """Return all is_relevant=True documents for the given publication date."""
-    result = (
-        _client()
-        .table("documents")
-        .select("*")
-        .eq("is_relevant", True)
-        .eq("publication_date", run_date.isoformat())
-        .execute()
-    )
-    return result.data
+    conn = _get_connection()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT * FROM documents
+                WHERE is_relevant = true
+                  AND publication_date = %s
+                """,
+                (run_date.isoformat(),),
+            )
+            return [dict(row) for row in cur.fetchall()]
+    finally:
+        conn.close()
