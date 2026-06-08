@@ -14,7 +14,9 @@ Endpoints:
 """
 
 import re
+import uuid
 from pathlib import Path
+from typing import Any, Dict
 
 import uvicorn
 from dotenv import load_dotenv
@@ -25,6 +27,12 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 load_dotenv(Path(__file__).parent / ".env")
+
+# ── In-memory job registry ─────────────────────────────────────────────────────
+# Stores pipeline run state keyed by job_id (uuid4 string).
+# States: "running" | "done" | "error"
+# This is process-local and intentionally ephemeral — jobs disappear on restart.
+_jobs: Dict[str, Dict[str, Any]] = {}
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _ASTRO_DIST = Path(__file__).parent / "sentinel-frontend" / "dist"
@@ -100,15 +108,45 @@ async def demo_run(request: DemoRequest, background_tasks: BackgroundTasks):
     return {"subscribed": request.email, "pipeline_started": True}
 
 
-@app.post("/run")
-async def run(date: str = None):
+@app.post("/run", status_code=202)
+async def run(date: str = None, background_tasks: BackgroundTasks = None):
     """
-    Daily cron entry point.
-    Runs Phase 1 → Phase 2 → Phase 3 sequentially via direct in-process calls.
+    Daily cron / demo entry point.
+    Returns 202 immediately with a job_id. The full Phase 1 → 2 → 3 pipeline
+    runs in the background. Poll GET /run/status/{job_id} to track progress.
     Pass ?date=YYYY-MM-DD to run against a specific date (backfill / testing).
     """
     from orchestrator import run_full_pipeline
-    return await run_full_pipeline(date)
+
+    job_id = str(uuid.uuid4())
+    _jobs[job_id] = {"status": "running", "date": date, "result": None, "error": None}
+
+    async def _run_and_capture():
+        try:
+            result = await run_full_pipeline(date)
+            _jobs[job_id]["status"] = "done"
+            _jobs[job_id]["result"] = result
+        except Exception as exc:  # noqa: BLE001
+            _jobs[job_id]["status"] = "error"
+            _jobs[job_id]["error"] = str(exc)
+
+    background_tasks.add_task(_run_and_capture)
+    return {"job_id": job_id, "status": "running", "date": date}
+
+
+@app.get("/run/status/{job_id}")
+async def run_status(job_id: str):
+    """
+    Poll the status of a background pipeline run.
+    Returns:
+      status=running  — pipeline still executing
+      status=done     — pipeline finished; result payload included
+      status=error    — pipeline raised an exception; error string included
+    """
+    job = _jobs.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found. It may have expired after a server restart.")
+    return job
 
 
 @app.get("/health")

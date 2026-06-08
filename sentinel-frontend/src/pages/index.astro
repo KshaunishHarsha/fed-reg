@@ -604,16 +604,12 @@ import Layout from '../layouts/Layout.astro';
     }
   });
 
-  // ── Run pipeline ──────────────────────────────
+  // ── Run pipeline (202 + polling) ──────────────
   document.getElementById('run-btn').addEventListener('click', async () => {
-    const btn    = document.getElementById('run-btn');
-    const status = document.getElementById('run-status');
+    const btn       = document.getElementById('run-btn');
+    const status    = document.getElementById('run-status');
     const dateInput = document.getElementById('run-date');
-    let runDate = dateInput.value;
-    
-    if (!runDate) {
-      runDate = new Date().toISOString().slice(0, 10);
-    }
+    let runDate = dateInput.value || new Date().toISOString().slice(0, 10);
 
     btn.disabled = true;
     btn.innerHTML = '<span class="spin"></span> Running…';
@@ -621,21 +617,53 @@ import Layout from '../layouts/Layout.astro';
     status.textContent = `Pipeline started for ${runDate} — this can take a few minutes.`;
 
     try {
-      const res   = await fetch(`${API}/run?date=${runDate}`, { method: 'POST' });
-      const data  = await res.json().catch(() => ({}));
-
-      if (res.ok) {
-        const p2 = data.phase2 || {};
-        status.className = 'status-msg ok';
-        status.textContent = `Done — ${data.phase1_confirmed ?? 0} relevant docs found, ${p2.processed ?? 0} summarised. Digest ${data.digest_built ? 'sent.' : 'not sent (no docs).'}`;
-        await loadSubs();
-      } else {
-        status.className = 'status-msg err';
-        status.textContent = data.detail || 'Pipeline returned an error.';
+      // Step 1: kick off the pipeline — returns 202 + job_id immediately
+      const kickRes = await fetch(`${API}/run?date=${runDate}`, { method: 'POST' });
+      if (!kickRes.ok) {
+        const err = await kickRes.json().catch(() => ({}));
+        throw new Error(err.detail || 'Failed to start pipeline.');
       }
-    } catch {
+      const { job_id } = await kickRes.json();
+
+      // Step 2: poll /run/status/{job_id} every 3 seconds until done or error
+      let elapsed = 0;
+      const POLL_MS = 3000;
+      const MAX_WAIT_MS = 15 * 60 * 1000; // 15 min hard ceiling
+
+      await new Promise((resolve, reject) => {
+        const timer = setInterval(async () => {
+          elapsed += POLL_MS;
+          if (elapsed > MAX_WAIT_MS) {
+            clearInterval(timer);
+            return reject(new Error('Pipeline timed out after 15 minutes.'));
+          }
+          try {
+            const pollRes = await fetch(`${API}/run/status/${job_id}`);
+            if (!pollRes.ok) { clearInterval(timer); return reject(new Error('Status check failed.')); }
+            const job = await pollRes.json();
+
+            if (job.status === 'done') {
+              clearInterval(timer);
+              const p2 = (job.result?.phase2) || {};
+              status.className = 'status-msg ok';
+              status.textContent = `Done — ${job.result?.phase1_confirmed ?? 0} relevant docs found, ${p2.processed ?? 0} summarised. Digest ${job.result?.digest_built ? 'sent.' : 'not sent (no docs).'}`;
+              await loadSubs();
+              resolve();
+            } else if (job.status === 'error') {
+              clearInterval(timer);
+              reject(new Error(job.error || 'Pipeline encountered an error.'));
+            }
+            // else still 'running' — keep polling
+          } catch (pollErr) {
+            clearInterval(timer);
+            reject(pollErr);
+          }
+        }, POLL_MS);
+      });
+
+    } catch (err) {
       status.className = 'status-msg err';
-      status.textContent = 'Network error — is the server running?';
+      status.textContent = err.message || 'Network error — is the server running?';
     } finally {
       btn.disabled = false;
       btn.innerHTML = 'Send digest';
