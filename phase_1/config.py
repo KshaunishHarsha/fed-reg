@@ -1,11 +1,24 @@
-import os
 import re
+from pathlib import Path
 
-ANCHOR_TERMS: list[str] = []
-CONTEXT_TERMS: list[str] = []
-NOISE_TITLE_KEYWORDS: list[str] = []
-ANCHOR_WB_PATTERN: re.Pattern | None = None
+import yaml
 
+# ── Keyword lists — loaded from keywords.yaml (single source of truth) ─────────
+_yaml_path = Path(__file__).parent / "keywords.yaml"
+with open(_yaml_path, encoding="utf-8") as _f:
+    _kw = yaml.safe_load(_f)
+
+ANCHOR_TERMS: list[str] = [t.lower() for t in (_kw.get("anchor_terms") or [])]
+CONTEXT_TERMS: list[str] = [t.lower() for t in (_kw.get("context_terms") or [])]
+NOISE_TITLE_KEYWORDS: list[str] = [t.lower() for t in (_kw.get("noise_title_keywords") or [])]
+
+_wb_terms = [t.lower() for t in (_kw.get("anchor_terms_word_boundary") or [])]
+ANCHOR_WB_PATTERN: re.Pattern | None = (
+    re.compile(r"\b(" + "|".join(re.escape(t) for t in _wb_terms) + r")\b")
+    if _wb_terms else None
+)
+
+# ── Static pipeline config ─────────────────────────────────────────────────────
 TARGET_AGENCY_SLUGS = [
     "agricultural-marketing-service",
     "animal-and-plant-health-inspection-service",
@@ -28,31 +41,3 @@ PIPELINE_RUN_MINUTE = 30
 
 FR_API_BASE = "https://www.federalregister.gov/api/v1"
 
-
-def load_keywords_from_db() -> None:
-    """Fetch enabled keywords from the DB and populate module-level lists."""
-    import psycopg2
-    import psycopg2.extras
-
-    global ANCHOR_TERMS, CONTEXT_TERMS, NOISE_TITLE_KEYWORDS, ANCHOR_WB_PATTERN
-
-    url = os.environ["DATABASE_URL"].replace("postgresql+asyncpg://", "postgresql://")
-    conn = psycopg2.connect(url)
-    try:
-        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                "SELECT term, list_type FROM keywords WHERE enabled = true ORDER BY list_type, term"
-            )
-            rows = cur.fetchall()
-    finally:
-        conn.close()
-
-    ANCHOR_TERMS = [r["term"].lower() for r in rows if r["list_type"] == "anchor"]
-    CONTEXT_TERMS = [r["term"].lower() for r in rows if r["list_type"] == "context"]
-    NOISE_TITLE_KEYWORDS = [r["term"].lower() for r in rows if r["list_type"] == "noise_title"]
-
-    wb_terms = [r["term"].lower() for r in rows if r["list_type"] == "anchor_wb"]
-    ANCHOR_WB_PATTERN = (
-        re.compile(r"\b(" + "|".join(re.escape(t) for t in wb_terms) + r")\b")
-        if wb_terms else None
-    )

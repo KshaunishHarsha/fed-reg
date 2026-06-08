@@ -12,7 +12,8 @@ from models import ConfirmedDocument
 def run_pipeline(target_date=None, dry_run: bool = False) -> List[ConfirmedDocument]:
     run_date = target_date or date.today()
     print(f"\n[Pipeline] Starting run for {run_date}")
-    config.load_keywords_from_db()
+    # Keywords are loaded from keywords.yaml at config import time — no DB call needed.
+
     if dry_run:
         print("[Pipeline] DRY RUN — no AI calls or DB writes")
 
