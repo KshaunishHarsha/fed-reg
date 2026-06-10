@@ -41,7 +41,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 
 from phase_3.digest_query import DigestRow
 from phase_3.xml_parser import XmlParseError, parse_xml_blob
@@ -120,10 +120,10 @@ class DigestPackage(BaseModel):
     total_documents: int = 0
     built_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     # Internal lists — used by orchestrator for per-subscriber filtering.
-    # Excluded from JSON API responses via exclude=True.
-    _section_a: List[Any] = Field(default_factory=list, exclude=True)
-    _section_b: List[Any] = Field(default_factory=list, exclude=True)
-    _section_c: List[Any] = Field(default_factory=list, exclude=True)
+    # Declared as PrivateAttr so Pydantic excludes them from JSON serialization.
+    _section_a: List[Any] = PrivateAttr(default_factory=list)
+    _section_b: List[Any] = PrivateAttr(default_factory=list)
+    _section_c: List[Any] = PrivateAttr(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -417,7 +417,7 @@ def build_digest(
         total_documents=len(section_a) + len(section_b) + len(section_c),
     )
     # Attach raw entry lists for per-subscriber filtering in the orchestrator
-    object.__setattr__(pkg, "_section_a", section_a)
-    object.__setattr__(pkg, "_section_b", section_b)
-    object.__setattr__(pkg, "_section_c", section_c)
+    pkg._section_a = section_a
+    pkg._section_b = section_b
+    pkg._section_c = section_c
     return pkg
