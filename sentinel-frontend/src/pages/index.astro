@@ -57,13 +57,13 @@ import Layout from '../layouts/Layout.astro';
 
         <p style="margin: 14px 0 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);">Categories to receive</p>
         <div id="pref-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin-bottom: 14px;">
-          <label class="pref-check"><input type="checkbox" name="pref_welfare"                checked /> Animal Welfare</label>
-          <label class="pref-check"><input type="checkbox" name="pref_wildlife"               checked /> Wildlife</label>
-          <label class="pref-check"><input type="checkbox" name="pref_agriculture"            checked /> Farm Animals</label>
-          <label class="pref-check"><input type="checkbox" name="pref_agricultural_subsidies" checked /> Agri. Subsidies</label>
-          <label class="pref-check"><input type="checkbox" name="pref_research_animals"       checked /> Research Animals</label>
-          <label class="pref-check"><input type="checkbox" name="pref_marine"                 checked /> Marine Animals</label>
-          <label class="pref-check"><input type="checkbox" name="pref_trade"                  checked /> Trade &amp; Export</label>
+          <label class="pref-check"><input type="checkbox" name="pref_welfare"                checked /> Companion &amp; Gen. Welfare</label>
+          <label class="pref-check"><input type="checkbox" name="pref_wildlife"               checked /> Wild Animals &amp; Habitat</label>
+          <label class="pref-check"><input type="checkbox" name="pref_agriculture"            checked /> Livestock Regulations</label>
+          <label class="pref-check"><input type="checkbox" name="pref_agricultural_subsidies" checked /> Farm Subsidies &amp; Loans</label>
+          <label class="pref-check"><input type="checkbox" name="pref_research_animals"       checked /> Lab &amp; Research Animals</label>
+          <label class="pref-check"><input type="checkbox" name="pref_marine"                 checked /> Marine &amp; Ocean Life</label>
+          <label class="pref-check"><input type="checkbox" name="pref_trade"                  checked /> Animal Trade &amp; Export</label>
         </div>
 
         <button type="submit" id="sub-btn" class="btn btn-teal">Subscribe</button>
@@ -695,9 +695,9 @@ import Layout from '../layouts/Layout.astro';
         count.textContent = '';
       } else {
         const PREF_LABELS = {
-          pref_welfare: 'Welfare', pref_wildlife: 'Wildlife',
-          pref_agriculture: 'Farm Animals', pref_agricultural_subsidies: 'Subsidies',
-          pref_research_animals: 'Research', pref_marine: 'Marine', pref_trade: 'Trade'
+          pref_welfare: 'Comp. & Gen. Welfare', pref_wildlife: 'Wild Animals',
+          pref_agriculture: 'Livestock', pref_agricultural_subsidies: 'Farm Subsidies',
+          pref_research_animals: 'Lab & Research', pref_marine: 'Marine', pref_trade: 'Trade & Export'
         };
         list.innerHTML = data.map(s => {
           const prefs = s.preferences || {};

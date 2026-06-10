@@ -157,13 +157,13 @@ def _build_comment_url(comment_url: Optional[str]) -> Optional[str]:
 
 # Human-readable labels for regulation_category codes from Phase 2
 CATEGORY_LABELS: Dict[str, str] = {
-    "welfare":                "Animal Welfare",
-    "wildlife":               "Wildlife",
-    "agriculture":            "Farm Animals",
-    "agricultural_subsidies": "Agricultural Subsidies & Financing",
-    "research_animals":       "Research Animals",
-    "marine":                 "Marine Animals",
-    "trade":                  "Trade & Import/Export",
+    "welfare":                "Companion & Gen. Welfare",
+    "wildlife":               "Wild Animals & Habitat",
+    "agriculture":            "Livestock Regulations",
+    "agricultural_subsidies": "Farm Subsidies & Loans",
+    "research_animals":       "Lab & Research Animals",
+    "marine":                 "Marine & Ocean Life",
+    "trade":                  "Animal Trade & Export",
 }
 
 # Preferred display order for categories within a section
