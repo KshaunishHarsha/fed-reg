@@ -153,7 +153,7 @@ Authoritative schema: **`phase_1/schema.sql`** — run once in Railway SQL Edito
 | `documents` | Phase 1 creates; Phase 2 + 3 update `pipeline_state` | One row per FR document. PK: `document_number`. |
 | `summaries` | Phase 2 | `xml_summary_blob`, `summarization_tier`, `summarization_status`, `correction_attempts`. FK → `documents`. |
 | `filter_audit` | Phase 1 | Every Layer 3 AI decision logged here. No FK to documents (logs dropped docs too). |
-| `mailing_list` | `phase_3/mailing_list.py` via `POST /demo/run` | Subscriber emails for the daily digest. PK: `id`. `email` is UNIQUE. `enabled` flag. |
+| `mailing_list` | `phase_3/mailing_list.py` via endpoints | Subscriber emails + category preferences for the daily digest. PK: `id`. `email` is UNIQUE. `enabled` flag. 7 `pref_*` boolean columns (default `true`). |
 
 **`pipeline_state` lifecycle:**
 
@@ -205,9 +205,11 @@ POST /run  (main.py)               ← production cron entry point
                     phase_3.digest_query.fetch_digest_rows(run_date)   [async]
                     phase_3.digest_builder.build_digest(rows, run_date) [sync]
                     → DigestPackage (html_body, text_body, section counts)
-                    → phase_3.mailing_list.get_active_recipients()     [async, DB-backed]
-                    → phase_3.mail_test.send_test_digest(recipients)   [SMTP]
-                    → if DEMO=true AND send succeeded: DELETE FROM documents (reset for re-run)
+                    → phase_3.mailing_list.get_active_recipients_with_prefs() [async, DB-backed]
+                    → per subscriber: filter sections by allowed_categories set
+                    → phase_3.digest_builder.build_digest(filtered, run_date, _pre_classified=True)
+                    → phase_3.mail_test.send_test_digest(recipients=[email])  [SMTP, per subscriber]
+                    → if DEMO=true AND all sends succeeded: DELETE FROM documents (reset for re-run)
                     → TODO Step 4: platform_handoff.send_digest(package)
 ```
 
@@ -229,8 +231,9 @@ POST /run  (main.py)               ← production cron entry point
 | `POST /phase3/digest/test` | `phase_3/router.py` | Dev — compile digest from existing DB rows |
 | `POST /phase3/mail/test` | `phase_3/router.py` | Dev — compile + send via SMTP to `test_recipients.yaml` |
 | `POST /phase3/validate/test` | `phase_3/router.py` | Dev — validate a raw XML blob in isolation |
-| `GET /phase3/subscribers` | `phase_3/router.py` | Demo frontend — list active subscribers `[{email, created_at}]` |
-| `POST /phase3/subscribe` | `phase_3/router.py` | Demo frontend — add/re-enable email on mailing list |
+| `GET /phase3/subscribers` | `phase_3/router.py` | Demo frontend — list active subscribers `[{email, created_at, preferences}]` |
+| `POST /phase3/subscribe` | `phase_3/router.py` | Demo frontend — add/re-enable email on mailing list; accepts optional `preferences` dict |
+| `PATCH /phase3/preferences` | `phase_3/router.py` | Update category preferences for an existing subscriber |
 | `DELETE /phase3/unsubscribe` | `phase_3/router.py` | Demo frontend — soft-delete email (sets `enabled=false`) |
 
 ---
@@ -378,7 +381,7 @@ From `phase_3/models.py` — `ValidatedSummary`:
 | Condition | Section |
 |-----------|---------|
 | `type=PRORULE` + `confidence=HIGH` + `comments_close_on >= today` | **A** — Action Required |
-| `type=RULE` or `NOTICE` + `confidence=HIGH` | **B** — Watchdog Monitoring |
+| `type=RULE` or `NOTICE` + `confidence=HIGH` | **B** — Regulatory Tracking |
 | `confidence=NEEDS_CONFIRMATION` (any type) | **C** — Potential Matches |
 | `type=PRORULE` with expired comment window | **C** — Potential Matches |
 
@@ -403,22 +406,34 @@ from phase_3.digest_builder import build_digest
 package = build_digest(rows, run_date)          # sync — no await
 # package.html_body, package.text_body, package.section_a/b/c_count, package.is_zero_result
 
-from phase_3.mailing_list import add_subscriber, get_active_recipients
-await add_subscriber(email)                     # async, upsert — re-enables disabled rows
-recipients = await get_active_recipients()      # async — returns List[str] of enabled emails
+from phase_3.mailing_list import (
+    add_subscriber,
+    get_active_recipients,
+    get_active_recipients_with_prefs,
+    get_active_subscribers,
+    update_preferences,
+    disable_subscriber,
+)
+await add_subscriber(email, preferences={"pref_wildlife": True, ...})  # upsert, prefs optional
+recipients = await get_active_recipients()                # List[str] — for zero-result path
+subs = await get_active_recipients_with_prefs()          # List[{email, allowed_categories: set[str]}]
+await update_preferences(email, {"pref_trade": False})   # update subset of prefs
+subs = await get_active_subscribers()                    # List[{email, created_at, preferences}] for UI
+await disable_subscriber(email)                          # sets enabled=false (soft delete)
 
-from phase_3.mailing_list import get_active_subscribers, disable_subscriber
-subs = await get_active_subscribers()           # async — returns List[{email, created_at}]
-await disable_subscriber(email)                 # async — sets enabled=false (soft delete)
+# build_digest now supports pre-classified fast-path for per-subscriber re-rendering:
+package = build_digest([], run_date, _pre_classified=True, _section_a=fa, _section_b=fb, _section_c=fc)
+# package._section_a/b/c (PrivateAttr) hold the raw DigestEntry lists for orchestrator filtering
 ```
 
 ### Mailing list — design notes
 - `mailing_list` table is the single source of truth for subscriber addresses. `test_recipients.yaml` is a dev-only fallback used only when the DB list is empty.
-- `add_subscriber` uses `ON CONFLICT (email) DO UPDATE SET enabled = true` — safe to call repeatedly (idempotent upsert).
-- `get_active_recipients` returns `[]` (not an error) when the table is empty — the orchestrator skips the email and DEMO cleanup when this happens.
-- `get_active_subscribers` returns full rows with `created_at` — used by the Astro frontend's live subscriber panel.
+- `add_subscriber` accepts an optional `preferences` dict `{pref_col: bool}`. Missing keys default to `True`. Uses `ON CONFLICT (email) DO UPDATE` — idempotent.
+- `get_active_recipients` returns `[]` (not an error) when the table is empty — orchestrator skips email and DEMO cleanup.
+- `get_active_recipients_with_prefs` returns `[{email, allowed_categories: set[str]}]` — used by orchestrator to filter each subscriber's digest.
+- `get_active_subscribers` returns full rows with `created_at` and `preferences` dict — used by the Astro frontend subscriber panel.
+- `update_preferences(email, prefs_dict)` updates only the supplied columns — partial update safe.
 - `disable_subscriber` soft-deletes: row stays in table, `enabled=false`. Re-subscribing via `add_subscriber` re-enables it.
-- The `name` column exists in the schema for future use (personalised salutation); the demo does not collect it.
 
 ### DEMO mode cleanup — invariants
 - `DEMO=true` in `.env` enables post-send cleanup.
@@ -437,6 +452,49 @@ await disable_subscriber(email)                 # async — sets enabled=false (
 4. Idempotency everywhere — `persist_validated_document` is safe to call twice
 5. Static links only — never interpolate LLM text into a URL
 6. `DigestPackage` is a Pydantic model — required for FastAPI `response_model` serialization
+
+---
+
+## Subscriber Category Preferences
+
+Added 2026-06-10. Allows each subscriber to choose which document categories they receive.
+
+### DB schema (mailing_list)
+Seven boolean columns, all `DEFAULT true`:
+```
+pref_welfare, pref_wildlife, pref_agriculture, pref_agricultural_subsidies,
+pref_research_animals, pref_marine, pref_trade
+```
+To add these to an existing Railway deployment, run `migrate_add_preferences.py` (gitignored — contains hardcoded DB URL). New schema.sql already includes them.
+
+### Category codes → display labels
+| DB / Phase 2 code | Email sub-heading & UI label |
+|---|---|
+| `welfare` | Companion & Gen. Welfare |
+| `wildlife` | Wild Animals & Habitat |
+| `agriculture` | Livestock Regulations |
+| `agricultural_subsidies` | Farm Subsidies & Loans |
+| `research_animals` | Lab & Research Animals |
+| `marine` | Marine & Ocean Life |
+| `trade` | Animal Trade & Export |
+
+Labels are defined in `CATEGORY_LABELS` dict in `phase_3/digest_builder.py`.
+
+### Per-subscriber email flow
+1. Orchestrator calls `get_active_recipients_with_prefs()` → list of `{email, allowed_categories}`.
+2. For each subscriber: filter `package._section_a/b/c` entries where `regulation_category in allowed_categories`.
+3. If no documents match → skip (no blank email sent).
+4. Call `build_digest(..., _pre_classified=True, _section_a=fa, _section_b=fb, _section_c=fc)` to render a personalized HTML/text body.
+5. Send via `send_test_digest(recipients=[email])` — one SMTP call per subscriber.
+
+### Phase 2 prompt
+`phase_2/summarizer.py` lists `agricultural_subsidies` as a valid `regulation_category` with explicit instructions (USDA loans, CAFO financing, livestock indemnity payments).
+
+### Frontend (Astro)
+- Subscribe form shows a 2-column checkbox grid, all ticked by default.
+- JS reads checkboxes and POSTs `{email, preferences: {pref_*: bool}}` to `POST /phase3/subscribe`.
+- Subscriber list renders active category tags (abbreviated labels) under each row.
+- `PATCH /phase3/preferences` endpoint allows updating preferences without re-subscribing.
 
 ---
 
