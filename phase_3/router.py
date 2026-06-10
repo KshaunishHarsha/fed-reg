@@ -668,14 +668,20 @@ async def mail_test(
 
 class SubscribeRequest(BaseModel):
     email: str
+    preferences: Optional[dict] = None  # {pref_welfare: bool, pref_wildlife: bool, ...}
+
+
+class PreferencesRequest(BaseModel):
+    email: str
+    preferences: dict  # {pref_welfare: bool, pref_wildlife: bool, ...}
 
 
 @router.get(
     "/subscribers",
-    summary="List all active mailing list subscribers.",
+    summary="List all active mailing list subscribers with their preferences.",
 )
 async def list_subscribers() -> list:
-    """Returns [{email, created_at}, ...] for all enabled rows, newest last."""
+    """Returns [{email, created_at, preferences}, ...] for all enabled rows."""
     from phase_3.mailing_list import get_active_subscribers
     return await get_active_subscribers()
 
@@ -689,12 +695,29 @@ async def list_subscribers() -> list:
     },
 )
 async def subscribe(request: SubscribeRequest) -> dict:
-    """Upserts the email with enabled=true. Safe to call repeatedly."""
+    """Upserts the email with enabled=true. Accepts optional category preferences."""
     import re
     if not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", request.email):
         raise HTTPException(status_code=400, detail="Invalid email address.")
     from phase_3.mailing_list import add_subscriber
-    return await add_subscriber(request.email)
+    return await add_subscriber(request.email, preferences=request.preferences)
+
+
+@router.patch(
+    "/preferences",
+    summary="Update category preferences for an existing subscriber.",
+    responses={
+        200: {"description": "Preferences updated."},
+        404: {"description": "Email not found or not enabled."},
+    },
+)
+async def update_preferences(request: PreferencesRequest) -> dict:
+    """Update which categories a subscriber receives. Only provided keys are changed."""
+    from phase_3.mailing_list import update_preferences as _update_prefs
+    try:
+        return await _update_prefs(request.email, request.preferences)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
 
 
 @router.delete(

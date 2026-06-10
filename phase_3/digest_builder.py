@@ -108,6 +108,8 @@ class DigestPackage(BaseModel):
     Returned by build_digest() and consumed by platform_handoff.py.
     Pydantic model for FastAPI response serialization.
     """
+    model_config = {"arbitrary_types_allowed": True}
+
     digest_date: date
     html_body: str
     text_body: str
@@ -117,6 +119,11 @@ class DigestPackage(BaseModel):
     section_c_count: int = 0
     total_documents: int = 0
     built_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    # Internal lists — used by orchestrator for per-subscriber filtering.
+    # Excluded from JSON API responses via exclude=True.
+    _section_a: List[Any] = Field(default_factory=list, exclude=True)
+    _section_b: List[Any] = Field(default_factory=list, exclude=True)
+    _section_c: List[Any] = Field(default_factory=list, exclude=True)
 
 
 # ---------------------------------------------------------------------------
@@ -274,23 +281,38 @@ def _parse_llm_fields(row: DigestRow) -> Dict[str, Any]:
 # Main builder
 # ---------------------------------------------------------------------------
 
-def build_digest(rows: List[DigestRow], digest_date: date) -> DigestPackage:
+def build_digest(
+    rows: List[DigestRow],
+    digest_date: date,
+    *,
+    _pre_classified: bool = False,
+    _section_a: Optional[List] = None,
+    _section_b: Optional[List] = None,
+    _section_c: Optional[List] = None,
+) -> DigestPackage:
     """
     Compile the full dual-layer digest package for a given day.
 
     Args:
-        rows:         List of DigestRow objects from digest_query.fetch_digest_rows().
-                      May be empty (zero-result day).
-        digest_date:  The calendar date this digest represents.
+        rows:            List of DigestRow objects. Pass [] for pre-classified path.
+        digest_date:     The calendar date this digest represents.
+        _pre_classified: If True, skip classification and use _section_X directly.
+                         Used by the orchestrator for per-subscriber re-rendering.
+        _section_a/b/c:  Pre-classified DigestEntry lists (only used when _pre_classified=True).
 
     Returns:
         DigestPackage with both html_body and text_body populated.
-        is_zero_result=True if rows was empty (circuit-breaker path).
     """
     today = digest_date
 
+    # -- Pre-classified fast-path (per-subscriber re-rendering) -----------------
+    if _pre_classified:
+        section_a = list(_section_a or [])
+        section_b = list(_section_b or [])
+        section_c = list(_section_c or [])
+        # Skip straight to template rendering below
     # -- Circuit breaker --------------------------------------------------------
-    if not rows:
+    elif not rows:
         logger.info(
             "[DigestBuilder] Zero documents for %s — rendering circuit-breaker digest.",
             digest_date.isoformat(),
@@ -384,7 +406,7 @@ def build_digest(rows: List[DigestRow], digest_date: date) -> DigestPackage:
     html_body = _jinja_env.get_template("digest_email.html").render(**template_ctx)
     text_body = _jinja_env.get_template("digest_email.txt").render(**template_ctx)
 
-    return DigestPackage(
+    pkg = DigestPackage(
         digest_date=digest_date,
         html_body=html_body,
         text_body=text_body,
@@ -392,5 +414,10 @@ def build_digest(rows: List[DigestRow], digest_date: date) -> DigestPackage:
         section_a_count=len(section_a),
         section_b_count=len(section_b),
         section_c_count=len(section_c),
-        total_documents=len(rows),
+        total_documents=len(section_a) + len(section_b) + len(section_c),
     )
+    # Attach raw entry lists for per-subscriber filtering in the orchestrator
+    object.__setattr__(pkg, "_section_a", section_a)
+    object.__setattr__(pkg, "_section_b", section_b)
+    object.__setattr__(pkg, "_section_c", section_c)
+    return pkg
