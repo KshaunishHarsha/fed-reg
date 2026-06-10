@@ -31,3 +31,7 @@ htmlcov/
 .vscode/
 .idea/
 *.swp
+
+# DB migration/deployment scripts (contain hardcoded connection strings)
+deploy_db.py
+migrate_add_preferences.py

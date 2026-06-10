@@ -54,12 +54,25 @@ import Layout from '../layouts/Layout.astro';
       <form id="form" novalidate>
         <label for="email" class="sr-only">Email address</label>
         <input id="email" type="email" placeholder="you@aldf.org" autocomplete="email" required />
+
+        <p style="margin: 14px 0 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);">Categories to receive</p>
+        <div id="pref-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin-bottom: 14px;">
+          <label class="pref-check"><input type="checkbox" name="pref_welfare"                checked /> Animal Welfare</label>
+          <label class="pref-check"><input type="checkbox" name="pref_wildlife"               checked /> Wildlife</label>
+          <label class="pref-check"><input type="checkbox" name="pref_agriculture"            checked /> Farm Animals</label>
+          <label class="pref-check"><input type="checkbox" name="pref_agricultural_subsidies" checked /> Agri. Subsidies</label>
+          <label class="pref-check"><input type="checkbox" name="pref_research_animals"       checked /> Research Animals</label>
+          <label class="pref-check"><input type="checkbox" name="pref_marine"                 checked /> Marine Animals</label>
+          <label class="pref-check"><input type="checkbox" name="pref_trade"                  checked /> Trade &amp; Export</label>
+        </div>
+
         <button type="submit" id="sub-btn" class="btn btn-teal">Subscribe</button>
         <p id="sub-status" class="status-msg" role="alert" aria-live="polite"></p>
       </form>
       <p style="font-size: 13px; color: var(--muted); margin-top: 12px; line-height: 1.5;">
         <strong>Note:</strong> After subscribing, you must manually run the pipeline below for a specific date to receive an email. We recommend testing with <strong>June 1, 2026</strong> which contains confirmed documents.
       </p>
+
 
       <div class="divider"></div>
 
@@ -401,6 +414,34 @@ import Layout from '../layouts/Layout.astro';
     animation: fadeIn 0.2s ease;
   }
   .sub-row:last-child { border-bottom: none; }
+  .pref-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+  }
+  .pref-check input[type="checkbox"] {
+    accent-color: var(--teal);
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+  }
+  .pref-tag {
+    display: inline-block;
+    background: var(--soft);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
   .sub-email {
     font-family: 'Space Grotesk', sans-serif;
     font-weight: 600;
@@ -653,12 +694,25 @@ import Layout from '../layouts/Layout.astro';
         list.innerHTML    = '<div class="sub-empty">No subscribers yet.</div>';
         count.textContent = '';
       } else {
-        list.innerHTML = data.map(s => `
-          <div class="sub-row">
-            <div class="sub-email" title="${esc(s.email)}">${esc(s.email)}</div>
+        const PREF_LABELS = {
+          pref_welfare: 'Welfare', pref_wildlife: 'Wildlife',
+          pref_agriculture: 'Farm Animals', pref_agricultural_subsidies: 'Subsidies',
+          pref_research_animals: 'Research', pref_marine: 'Marine', pref_trade: 'Trade'
+        };
+        list.innerHTML = data.map(s => {
+          const prefs = s.preferences || {};
+          const activeTags = Object.entries(prefs)
+            .filter(([,v]) => v)
+            .map(([k]) => `<span class="pref-tag">${PREF_LABELS[k] || k}</span>`)
+            .join('');
+          return `
+          <div class="sub-row" style="flex-wrap:wrap; gap:4px;">
+            <div class="sub-email" title="${esc(s.email)}" style="flex:1;min-width:0;">${esc(s.email)}</div>
             <div class="sub-date">${s.created_at ? new Date(s.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''}</div>
             <button class="rm" data-email="${encodeURIComponent(s.email)}" aria-label="Remove ${esc(s.email)}">remove</button>
-          </div>`).join('');
+            ${activeTags ? `<div style="width:100%;display:flex;flex-wrap:wrap;gap:4px;padding-top:4px;">${activeTags}</div>` : ''}
+          </div>`;
+        }).join('');
         count.textContent = `${data.length} active subscriber${data.length === 1 ? '' : 's'}`;
       }
     } catch {
@@ -686,10 +740,16 @@ import Layout from '../layouts/Layout.astro';
     status.textContent = '';
 
     try {
+      // Collect checkbox preferences
+      const prefs = {};
+      document.querySelectorAll('#pref-grid input[type="checkbox"]').forEach(cb => {
+        prefs[cb.name] = cb.checked;
+      });
+
       const res = await fetch(`${API}/phase3/subscribe`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ email }),
+        body:    JSON.stringify({ email, preferences: prefs }),
       });
       if (res.ok) {
         status.className = 'status-msg ok';

@@ -138,15 +138,21 @@ CREATE TRIGGER trg_summaries_updated_at
 -- TABLE 4: mailing_list
 -- Stores subscriber email addresses for the daily digest.
 -- Managed via POST /phase3/subscribe and DELETE /phase3/unsubscribe.
+-- Category prefs: true = subscriber receives docs of that category.
+-- All default to true (opt-in everything on subscribe).
 -- ============================================================
 CREATE TABLE mailing_list (
-    id          BIGSERIAL PRIMARY KEY,
-    email       TEXT NOT NULL UNIQUE,
-    enabled     BOOLEAN NOT NULL DEFAULT true,
-    created_at  TIMESTAMPTZ DEFAULT now()
+    id                      BIGSERIAL PRIMARY KEY,
+    email                   TEXT NOT NULL UNIQUE,
+    enabled                 BOOLEAN NOT NULL DEFAULT true,
+    pref_welfare            BOOLEAN NOT NULL DEFAULT true,
+    pref_wildlife           BOOLEAN NOT NULL DEFAULT true,
+    pref_agriculture        BOOLEAN NOT NULL DEFAULT true,
+    pref_agricultural_subsidies BOOLEAN NOT NULL DEFAULT true,
+    pref_research_animals   BOOLEAN NOT NULL DEFAULT true,
+    pref_marine             BOOLEAN NOT NULL DEFAULT true,
+    pref_trade              BOOLEAN NOT NULL DEFAULT true,
+    created_at              TIMESTAMPTZ DEFAULT now()
 );
 
 CREATE INDEX idx_mailing_list_enabled ON mailing_list (enabled);
-
-GRANT ALL PRIVILEGES ON TABLE mailing_list TO anon;
-GRANT USAGE, SELECT ON SEQUENCE mailing_list_id_seq TO anon;

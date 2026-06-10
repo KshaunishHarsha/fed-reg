@@ -140,31 +140,65 @@ async def run_full_pipeline(target_date: Optional[str] = None) -> dict:
             f"C:{package.section_c_count} (zero={package.is_zero_result})"
         )
         
-        # Send digest to mailing list subscribers, then (if DEMO=true) reset DB
-        # so the same date can be re-run immediately without dedup blocking.
-        # Cleanup fires ONLY after send_test_digest() returns — guaranteeing that
-        # even the zero-result circuit-breaker email is delivered before the wipe.
+        # Send personalized digest per subscriber based on their category preferences.
+        # Cleanup fires ONLY after all sends complete.
         import os
         _demo = os.environ.get("DEMO", "").lower() == "true"
 
         try:
-            from phase_3.mailing_list import get_active_recipients
+            from phase_3.digest_builder import build_digest
+            from phase_3.mailing_list import get_active_recipients_with_prefs
             from phase_3.mail_test import send_test_digest
-            recipients = await get_active_recipients()
-            if recipients:
-                loop = asyncio.get_event_loop()
-                result = await loop.run_in_executor(
-                    _executor,
-                    lambda: send_test_digest(
-                        html_body=package.html_body,
-                        text_body=package.text_body,
-                        digest_date=package.digest_date,
-                        recipients=recipients,
-                    ),
-                )
-                print(f"[Orchestrator] Email sent to {result['sent']} (failed: {result['failed']})")
 
-                # DEMO cleanup — only reachable after a successful send
+            subscribers = await get_active_recipients_with_prefs()
+            if subscribers:
+                all_sent = []
+                all_failed = []
+
+                for subscriber in subscribers:
+                    email = subscriber["email"]
+                    allowed = subscriber["allowed_categories"]  # set of category strings
+
+                    if package.is_zero_result:
+                        # Zero-result path — send the circuit-breaker email unfiltered
+                        personalized_package = package
+                    else:
+                        # Filter each section to only include the subscriber's chosen categories
+                        filtered_a = [e for e in package._section_a if (e.regulation_category or "other").lower() in allowed]
+                        filtered_b = [e for e in package._section_b if (e.regulation_category or "other").lower() in allowed]
+                        filtered_c = [e for e in package._section_c if (e.regulation_category or "other").lower() in allowed]
+
+                        # If they have NO matching docs at all, skip — don't send a blank email
+                        if not filtered_a and not filtered_b and not filtered_c:
+                            print(f"[Orchestrator] No matching docs for {email} — skipping.")
+                            continue
+
+                        # Re-build a personalized digest package for this subscriber
+                        personalized_package = build_digest(
+                            filtered_a + filtered_b + filtered_c,
+                            package.digest_date,
+                            _pre_classified=True,
+                            _section_a=filtered_a,
+                            _section_b=filtered_b,
+                            _section_c=filtered_c,
+                        )
+
+                    loop = asyncio.get_event_loop()
+                    result = await loop.run_in_executor(
+                        _executor,
+                        lambda p=personalized_package, e=email: send_test_digest(
+                            html_body=p.html_body,
+                            text_body=p.text_body,
+                            digest_date=p.digest_date,
+                            recipients=[e],
+                        ),
+                    )
+                    all_sent.extend(result["sent"])
+                    all_failed.extend(result["failed"])
+
+                print(f"[Orchestrator] Emails sent to {all_sent} (failed: {all_failed})")
+
+                # DEMO cleanup — only reachable after all sends complete
                 if _demo:
                     try:
                         from phase_3.db import get_session_factory
@@ -181,6 +215,7 @@ async def run_full_pipeline(target_date: Optional[str] = None) -> dict:
                 print("[Orchestrator] No active subscribers — email skipped, DEMO cleanup skipped.")
         except Exception as e:
             print(f"[Orchestrator] Failed to send email: {e}")
+
 
         # TODO Step 4: platform_handoff.send_digest(package)
         digest_built = True
