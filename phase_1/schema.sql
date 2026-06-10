@@ -130,6 +130,22 @@ CREATE TABLE mailing_list (
     email       TEXT NOT NULL UNIQUE,
     name        TEXT,
     enabled     BOOLEAN NOT NULL DEFAULT TRUE,
+    -- Category preferences (default true = receive all categories)
+    pref_welfare                BOOLEAN NOT NULL DEFAULT TRUE,
+    pref_wildlife               BOOLEAN NOT NULL DEFAULT TRUE,
+    pref_agriculture            BOOLEAN NOT NULL DEFAULT TRUE,
+    pref_agricultural_subsidies BOOLEAN NOT NULL DEFAULT TRUE,
+    pref_research_animals       BOOLEAN NOT NULL DEFAULT TRUE,
+    pref_marine                 BOOLEAN NOT NULL DEFAULT TRUE,
+    pref_trade                  BOOLEAN NOT NULL DEFAULT TRUE,
+    -- Agency preferences (default true = receive docs from all monitored agencies)
+    pref_agency_ams             BOOLEAN NOT NULL DEFAULT TRUE,
+    pref_agency_aphis           BOOLEAN NOT NULL DEFAULT TRUE,
+    pref_agency_fsis            BOOLEAN NOT NULL DEFAULT TRUE,
+    pref_agency_fda             BOOLEAN NOT NULL DEFAULT TRUE,
+    pref_agency_noaa            BOOLEAN NOT NULL DEFAULT TRUE,
+    pref_agency_fws             BOOLEAN NOT NULL DEFAULT TRUE,
+    pref_agency_nih             BOOLEAN NOT NULL DEFAULT TRUE,
     created_at  TIMESTAMPTZ DEFAULT now()
 );
 

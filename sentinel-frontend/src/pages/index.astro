@@ -66,6 +66,17 @@ import Layout from '../layouts/Layout.astro';
           <label class="pref-check"><input type="checkbox" name="pref_trade"                  checked /> Animal Trade &amp; Export</label>
         </div>
 
+        <p style="margin: 14px 0 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);">Agencies to monitor</p>
+        <div id="agency-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin-bottom: 14px;">
+          <label class="pref-check"><input type="checkbox" name="pref_agency_aphis" checked /> Animal &amp; Plant Health (APHIS)</label>
+          <label class="pref-check"><input type="checkbox" name="pref_agency_fws"   checked /> Fish &amp; Wildlife Service</label>
+          <label class="pref-check"><input type="checkbox" name="pref_agency_fsis"  checked /> Food Safety Inspection (FSIS)</label>
+          <label class="pref-check"><input type="checkbox" name="pref_agency_noaa"  checked /> NOAA / Fisheries</label>
+          <label class="pref-check"><input type="checkbox" name="pref_agency_fda"   checked /> Food &amp; Drug Admin. (FDA)</label>
+          <label class="pref-check"><input type="checkbox" name="pref_agency_nih"   checked /> Natl. Institutes of Health</label>
+          <label class="pref-check"><input type="checkbox" name="pref_agency_ams"   checked /> Agri. Marketing Service</label>
+        </div>
+
         <button type="submit" id="sub-btn" class="btn btn-teal">Subscribe</button>
         <p id="sub-status" class="status-msg" role="alert" aria-live="polite"></p>
       </form>
@@ -441,6 +452,11 @@ import Layout from '../layouts/Layout.astro';
     color: var(--muted);
     letter-spacing: 0.04em;
   }
+  .pref-tag-agency {
+    background: rgba(0, 108, 103, 0.06);
+    border-color: rgba(0, 108, 103, 0.2);
+    color: var(--teal);
+  }
 
   .sub-email {
     font-family: 'Space Grotesk', sans-serif;
@@ -694,23 +710,35 @@ import Layout from '../layouts/Layout.astro';
         list.innerHTML    = '<div class="sub-empty">No subscribers yet.</div>';
         count.textContent = '';
       } else {
-        const PREF_LABELS = {
-          pref_welfare: 'Comp. & Gen. Welfare', pref_wildlife: 'Wild Animals',
+        const CAT_LABELS = {
+          pref_welfare: 'Comp. & Welfare', pref_wildlife: 'Wild Animals',
           pref_agriculture: 'Livestock', pref_agricultural_subsidies: 'Farm Subsidies',
           pref_research_animals: 'Lab & Research', pref_marine: 'Marine', pref_trade: 'Trade & Export'
         };
+        const AGENCY_LABELS = {
+          pref_agency_aphis: 'APHIS', pref_agency_fws: 'FWS',
+          pref_agency_fsis: 'FSIS', pref_agency_noaa: 'NOAA',
+          pref_agency_fda: 'FDA', pref_agency_nih: 'NIH', pref_agency_ams: 'AMS'
+        };
         list.innerHTML = data.map(s => {
           const prefs = s.preferences || {};
-          const activeTags = Object.entries(prefs)
-            .filter(([,v]) => v)
-            .map(([k]) => `<span class="pref-tag">${PREF_LABELS[k] || k}</span>`)
+          const catTags = Object.entries(CAT_LABELS)
+            .filter(([k]) => prefs[k])
+            .map(([,label]) => `<span class="pref-tag">${label}</span>`)
             .join('');
+          const agencyTags = Object.entries(AGENCY_LABELS)
+            .filter(([k]) => prefs[k])
+            .map(([,label]) => `<span class="pref-tag pref-tag-agency">${label}</span>`)
+            .join('');
+          const tagsRow = (catTags || agencyTags)
+            ? `<div style="width:100%;display:flex;flex-wrap:wrap;gap:4px;padding-top:4px;">${catTags}${agencyTags ? '<span style="width:4px;display:inline-block"></span>' + agencyTags : ''}</div>`
+            : '';
           return `
           <div class="sub-row" style="flex-wrap:wrap; gap:4px;">
             <div class="sub-email" title="${esc(s.email)}" style="flex:1;min-width:0;">${esc(s.email)}</div>
             <div class="sub-date">${s.created_at ? new Date(s.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''}</div>
             <button class="rm" data-email="${encodeURIComponent(s.email)}" aria-label="Remove ${esc(s.email)}">remove</button>
-            ${activeTags ? `<div style="width:100%;display:flex;flex-wrap:wrap;gap:4px;padding-top:4px;">${activeTags}</div>` : ''}
+            ${tagsRow}
           </div>`;
         }).join('');
         count.textContent = `${data.length} active subscriber${data.length === 1 ? '' : 's'}`;

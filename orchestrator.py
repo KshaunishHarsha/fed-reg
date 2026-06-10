@@ -157,16 +157,31 @@ async def run_full_pipeline(target_date: Optional[str] = None) -> dict:
 
                 for subscriber in subscribers:
                     email = subscriber["email"]
-                    allowed = subscriber["allowed_categories"]  # set of category strings
+                    allowed_categories = subscriber["allowed_categories"]
+                    allowed_agencies = subscriber.get("allowed_agencies", set())
 
                     if package.is_zero_result:
                         # Zero-result path — send the circuit-breaker email unfiltered
                         personalized_package = package
                     else:
-                        # Filter each section to only include the subscriber's chosen categories
-                        filtered_a = [e for e in package._section_a if (e.regulation_category or "other").lower() in allowed]
-                        filtered_b = [e for e in package._section_b if (e.regulation_category or "other").lower() in allowed]
-                        filtered_c = [e for e in package._section_c if (e.regulation_category or "other").lower() in allowed]
+                        # Filter each section by both category and agency preferences (AND logic).
+                        # A document appears only if its category AND at least one of its
+                        # agencies is in the subscriber's allowed sets.
+                        def _keep(e, cats=allowed_categories, agencies=allowed_agencies):
+                            cat_ok = (e.regulation_category or "other").lower() in cats
+                            if not cat_ok:
+                                return False
+                            if not agencies:
+                                return False
+                            return any(
+                                canon.lower() in actual.lower()
+                                for canon in agencies
+                                for actual in e.agency_names
+                            )
+
+                        filtered_a = [e for e in package._section_a if _keep(e)]
+                        filtered_b = [e for e in package._section_b if _keep(e)]
+                        filtered_c = [e for e in package._section_c if _keep(e)]
 
                         # If they have NO matching docs at all, skip — don't send a blank email
                         if not filtered_a and not filtered_b and not filtered_c:

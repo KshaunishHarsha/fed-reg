@@ -4,13 +4,18 @@ phase_3/mailing_list.py
 Mailing list subscriber management backed by the `mailing_list` table.
 Uses the same SQLAlchemy async engine as the rest of Phase 3.
 
-Table DDL lives in schema.sql. Run migrate_add_preferences.py to add
-category preference columns to an existing deployment.
+Table DDL lives in schema.sql. Run migrations to add preference columns to
+an existing deployment.
 
-Category preference columns:
+Category preference columns (pref_*):
   pref_welfare, pref_wildlife, pref_agriculture, pref_agricultural_subsidies,
   pref_research_animals, pref_marine, pref_trade
   All default to True (opt-in to all categories on subscribe).
+
+Agency preference columns (pref_agency_*):
+  pref_agency_ams, pref_agency_aphis, pref_agency_fsis, pref_agency_fda,
+  pref_agency_noaa, pref_agency_fws, pref_agency_nih
+  All default to True (opt-in to all agencies on subscribe).
 """
 
 from __future__ import annotations
@@ -32,28 +37,39 @@ PREF_COLUMNS: Dict[str, str] = {
     "pref_trade":                  "trade",
 }
 
-_PREF_COLS_SQL = ", ".join(PREF_COLUMNS.keys())
+# Maps DB column names → canonical agency name strings (matched against DigestEntry.agency_names)
+AGENCY_PREF_COLUMNS: Dict[str, str] = {
+    "pref_agency_ams":   "Agricultural Marketing Service",
+    "pref_agency_aphis": "Animal and Plant Health Inspection Service",
+    "pref_agency_fsis":  "Food Safety and Inspection Service",
+    "pref_agency_fda":   "Food and Drug Administration",
+    "pref_agency_noaa":  "National Oceanic and Atmospheric Administration",
+    "pref_agency_fws":   "Fish and Wildlife Service",
+    "pref_agency_nih":   "National Institutes of Health",
+}
 
+ALL_PREF_COLUMNS: Dict[str, str] = {**PREF_COLUMNS, **AGENCY_PREF_COLUMNS}
+_ALL_PREF_COLS_SQL = ", ".join(ALL_PREF_COLUMNS.keys())
 
-def _prefs_from_row(row) -> Dict[str, bool]:
-    """Extract preference dict from a DB row tuple (after id, email, enabled, created_at)."""
-    # Row layout: id, email, enabled, pref_welfare, pref_wildlife, ..., created_at
-    pref_keys = list(PREF_COLUMNS.keys())
-    return {pref_keys[i]: bool(row[3 + i]) for i in range(len(pref_keys))}
+_CAT_KEYS = list(PREF_COLUMNS.keys())
+_AGENCY_KEYS = list(AGENCY_PREF_COLUMNS.keys())
+_ALL_KEYS = list(ALL_PREF_COLUMNS.keys())
+_N_CAT = len(_CAT_KEYS)
+_N_AGENCY = len(_AGENCY_KEYS)
 
 
 async def add_subscriber(email: str, preferences: Optional[Dict[str, bool]] = None) -> dict:
     """
     Upsert an email into mailing_list.
     If the address already exists but is disabled, re-enables it and updates prefs.
-    preferences: dict of {pref_column_name: bool}, e.g. {"pref_wildlife": True}.
-                 Missing keys default to True.
+    preferences: dict of {pref_column_name: bool} for any combination of category
+                 and agency columns. Missing keys default to True.
     Returns {id, email, preferences}.
     """
-    prefs = {col: preferences.get(col, True) if preferences else True for col in PREF_COLUMNS}
-    pref_set_clause = ", ".join(f"{col} = :{col}" for col in PREF_COLUMNS)
-    pref_cols = ", ".join(PREF_COLUMNS.keys())
-    pref_placeholders = ", ".join(f":{col}" for col in PREF_COLUMNS)
+    prefs = {col: preferences.get(col, True) if preferences else True for col in ALL_PREF_COLUMNS}
+    pref_set_clause = ", ".join(f"{col} = :{col}" for col in ALL_PREF_COLUMNS)
+    pref_cols = ", ".join(ALL_PREF_COLUMNS.keys())
+    pref_placeholders = ", ".join(f":{col}" for col in ALL_PREF_COLUMNS)
 
     session_factory = get_session_factory()
     async with session_factory() as session:
@@ -64,28 +80,28 @@ async def add_subscriber(email: str, preferences: Optional[Dict[str, bool]] = No
                 ON CONFLICT (email) DO UPDATE SET
                     enabled = true,
                     {pref_set_clause}
-                RETURNING id, email, {_PREF_COLS_SQL}
+                RETURNING id, email, {_ALL_PREF_COLS_SQL}
             """),
             {"email": email, **prefs},
         )
         row = result.fetchone()
         await session.commit()
 
-    pref_keys = list(PREF_COLUMNS.keys())
     return {
         "id": row[0],
         "email": row[1],
-        "preferences": {pref_keys[i]: bool(row[2 + i]) for i in range(len(pref_keys))},
+        "preferences": {_ALL_KEYS[i]: bool(row[2 + i]) for i in range(len(_ALL_KEYS))},
     }
 
 
 async def update_preferences(email: str, preferences: Dict[str, bool]) -> dict:
     """
-    Update category preferences for an existing subscriber.
-    Only updates the columns that are present in the preferences dict.
+    Update category and/or agency preferences for an existing subscriber.
+    Only updates the columns present in the preferences dict.
+    Accepts any mix of pref_* and pref_agency_* keys.
     Returns {email, preferences} or raises ValueError if not found.
     """
-    valid_prefs = {k: v for k, v in preferences.items() if k in PREF_COLUMNS}
+    valid_prefs = {k: v for k, v in preferences.items() if k in ALL_PREF_COLUMNS}
     if not valid_prefs:
         raise ValueError("No valid preference columns provided.")
 
@@ -96,7 +112,7 @@ async def update_preferences(email: str, preferences: Dict[str, bool]) -> dict:
             text(f"""
                 UPDATE mailing_list SET {set_clause}
                 WHERE email = :email AND enabled = true
-                RETURNING id, email, {_PREF_COLS_SQL}
+                RETURNING id, email, {_ALL_PREF_COLS_SQL}
             """),
             {"email": email, **valid_prefs},
         )
@@ -106,10 +122,9 @@ async def update_preferences(email: str, preferences: Dict[str, bool]) -> dict:
     if row is None:
         raise ValueError(f"{email} not found in mailing list or is not enabled.")
 
-    pref_keys = list(PREF_COLUMNS.keys())
     return {
         "email": row[1],
-        "preferences": {pref_keys[i]: bool(row[2 + i]) for i in range(len(pref_keys))},
+        "preferences": {_ALL_KEYS[i]: bool(row[2 + i]) for i in range(len(_ALL_KEYS))},
     }
 
 
@@ -129,15 +144,15 @@ async def get_active_recipients() -> List[str]:
 
 async def get_active_recipients_with_prefs() -> List[Dict]:
     """
-    Return all enabled subscribers with their category preferences.
-    Each dict: {email: str, allowed_categories: set[str]}
+    Return all enabled subscribers with their category and agency preferences.
+    Each dict: {email: str, allowed_categories: set[str], allowed_agencies: set[str]}
     Used by the orchestrator to send personalized digests.
     """
     session_factory = get_session_factory()
     async with session_factory() as session:
         result = await session.execute(
             text(f"""
-                SELECT email, {_PREF_COLS_SQL}
+                SELECT email, {_ALL_PREF_COLS_SQL}
                 FROM mailing_list
                 WHERE enabled = true
                 ORDER BY created_at
@@ -145,15 +160,24 @@ async def get_active_recipients_with_prefs() -> List[Dict]:
         )
         rows = result.fetchall()
 
-    pref_keys = list(PREF_COLUMNS.keys())
     subscribers = []
     for row in rows:
-        allowed = {
-            PREF_COLUMNS[pref_keys[i]]
-            for i in range(len(pref_keys))
+        # row[0]=email, row[1..N_CAT]=category prefs, row[N_CAT+1..]=agency prefs
+        allowed_categories = {
+            PREF_COLUMNS[_CAT_KEYS[i]]
+            for i in range(_N_CAT)
             if bool(row[1 + i])
         }
-        subscribers.append({"email": row[0], "allowed_categories": allowed})
+        allowed_agencies = {
+            AGENCY_PREF_COLUMNS[_AGENCY_KEYS[i]]
+            for i in range(_N_AGENCY)
+            if bool(row[1 + _N_CAT + i])
+        }
+        subscribers.append({
+            "email": row[0],
+            "allowed_categories": allowed_categories,
+            "allowed_agencies": allowed_agencies,
+        })
     return subscribers
 
 
@@ -161,12 +185,13 @@ async def get_active_subscribers() -> List[dict]:
     """
     Return full subscriber rows for the demo frontend subscriber list.
     Each dict: {email, created_at, preferences}.
+    preferences includes both category (pref_*) and agency (pref_agency_*) columns.
     """
     session_factory = get_session_factory()
     async with session_factory() as session:
         result = await session.execute(
             text(f"""
-                SELECT email, created_at, {_PREF_COLS_SQL}
+                SELECT email, created_at, {_ALL_PREF_COLS_SQL}
                 FROM mailing_list
                 WHERE enabled = true
                 ORDER BY created_at
@@ -174,12 +199,11 @@ async def get_active_subscribers() -> List[dict]:
         )
         rows = result.fetchall()
 
-    pref_keys = list(PREF_COLUMNS.keys())
     return [
         {
             "email": row[0],
             "created_at": row[1].isoformat() if row[1] else None,
-            "preferences": {pref_keys[i]: bool(row[2 + i]) for i in range(len(pref_keys))},
+            "preferences": {_ALL_KEYS[i]: bool(row[2 + i]) for i in range(len(_ALL_KEYS))},
         }
         for row in rows
     ]
