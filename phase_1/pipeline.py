@@ -57,8 +57,13 @@ def run_pipeline(target_date=None, dry_run: bool = False) -> List[ConfirmedDocum
         )
 
         if result.is_relevant:
+            # Hybrid relevancy: a strong anchor match (keyword confidence HIGH) is
+            # trusted as HIGH; weaker context-only docs take the AI's MEDIUM/LOW grade.
+            relevancy = "HIGH" if doc.confidence == "HIGH" else result.relevancy
+            data = doc.model_dump()
+            data["confidence"] = relevancy  # overwrite keyword tier with relevancy grade
             confirmed = ConfirmedDocument(
-                **doc.model_dump(),
+                **data,
                 is_relevant=result.is_relevant,
                 regulation_category=result.regulation_category,
                 filter_reason=result.confidence_reason,

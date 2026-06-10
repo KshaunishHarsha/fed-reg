@@ -24,12 +24,14 @@ Responsibilities
 5. Return a DigestPackage containing both bodies + metadata, ready for
    platform_handoff.py to send via the Open Paws email system.
 
-Section mapping (from schema.sql `type` values + `confidence`):
-  Section A — PRORULE documents with comments_close_on >= today
-  Section B — RULE + NOTICE documents (regardless of confidence)
-  Section C — NEEDS_CONFIRMATION documents (any type) + PRORULE past deadline
-              + 'Other' regulation_category documents
+Section mapping (action axis — from schema.sql `type` + comment window):
+  Section A — PRORULE documents with comments_close_on >= today (actionable)
+  Section B — everything else relevant: RULE, NOTICE, expired PRORULE, other types
   Zero-result — circuit breaker when no documents exist for the day
+
+Relevancy (separate axis — from `documents.confidence`):
+  HIGH / MEDIUM / LOW badge rendered on every card; sorts entries within a section.
+  HIGH = strong keyword anchor, MEDIUM / LOW = AI-graded context-only documents.
 """
 
 from __future__ import annotations
@@ -98,8 +100,8 @@ class DigestEntry:
     comments_days_left: Optional[int]        # None if no deadline; negative if expired
     summarization_tier: Optional[int]        # 1=abstract only, 2=body, 3=full doc
     # Section assignment
-    section: str                             # "A" | "B" | "C"
-    is_needs_confirmation: bool = False      # drives Section C badge
+    section: str                             # "A" | "B"
+    relevancy: str = "MEDIUM"                # HIGH | MEDIUM | LOW — drives the card badge
 
 
 class DigestPackage(BaseModel):
@@ -205,39 +207,45 @@ def _group_by_category(entries: List[DigestEntry]) -> List[Dict[str, Any]]:
 # Section classifier
 # ---------------------------------------------------------------------------
 
+_RELEVANCY_RANK = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
+
+
+def _normalize_relevancy(value: Optional[str]) -> str:
+    """
+    Coerce the documents.confidence value into a HIGH/MEDIUM/LOW relevancy grade.
+
+    New rows store HIGH/MEDIUM/LOW directly. Legacy rows may still hold the old
+    keyword tier ('NEEDS_CONFIRMATION') — map that to LOW. Anything unknown or
+    missing defaults to MEDIUM so the entry is neither hidden nor over-promoted.
+    """
+    v = (value or "").upper()
+    if v in _RELEVANCY_RANK:
+        return v
+    if v == "NEEDS_CONFIRMATION":
+        return "LOW"
+    return "MEDIUM"
+
+
 def _classify_section(row: DigestRow, today: date) -> str:
     """
-    Assign one of three digest sections based on DB fields only.
+    Assign one of two digest sections based on DB fields only. Relevancy is a
+    separate axis (the HIGH/MEDIUM/LOW badge) and no longer affects the section.
 
     Section A — Proposed rules WITH an active (future/today) comment window.
-                Highest priority: attorney action required before deadline.
-    Section B — Final Rules and Notices, regardless of confidence.
-                Important for litigation tracking but no immediate action window.
-    Section C — Everything else:
-                  • NEEDS_CONFIRMATION documents (borderline relevance)
-                  • Proposed rules whose comment window has already closed
-                  • 'Other' regulation_category
-                  • Presidential Documents (type not PRORULE/RULE/NOTICE)
+                The only actionable section: a comment can still be filed.
+    Section B — Everything else relevant: final rules, notices, expired
+                proposed rules, and any other document type. Tracking only.
     """
     doc_type = (row.type or "").upper()
-    is_confirmed = (row.confidence or "HIGH") == "HIGH"
     has_open_comment = (
         row.comments_close_on is not None
         and row.comments_close_on >= today
     )
 
-    # Borderline confidence → always Section C regardless of type
-    if not is_confirmed:
-        return "C"
+    if doc_type == "PRORULE" and has_open_comment:
+        return "A"
 
-    if doc_type == "PRORULE":
-        return "A" if has_open_comment else "C"
-
-    if doc_type in ("RULE", "NOTICE"):
-        return "B"
-
-    # PRESDOC and anything unrecognised → Section C
-    return "C"
+    return "B"
 
 
 # ---------------------------------------------------------------------------
@@ -362,20 +370,18 @@ def build_digest(
             ),
             summarization_tier=row.summarization_tier,
             section=section,
-            is_needs_confirmation=(row.confidence == "NEEDS_CONFIRMATION"),
+            relevancy=_normalize_relevancy(row.confidence),
         )
 
         if section == "A":
             section_a.append(entry)
-        elif section == "B":
-            section_b.append(entry)
         else:
-            section_c.append(entry)
+            section_b.append(entry)
 
-    # Section A: soonest deadline first (already sorted by query, keep order)
-    # Section B: no further sort needed
-    # Section C: unconfirmed items last within section
-    section_c.sort(key=lambda e: (e.is_needs_confirmation, e.document_number))
+    # Within each section, surface higher-relevancy documents first.
+    # Section A keeps the query's deadline ordering as the tie-breaker.
+    section_a.sort(key=lambda e: _RELEVANCY_RANK.get(e.relevancy, 1))
+    section_b.sort(key=lambda e: (_RELEVANCY_RANK.get(e.relevancy, 1), e.document_number))
 
     logger.info(
         "[DigestBuilder] %s — Section A: %d, Section B: %d, Section C: %d",

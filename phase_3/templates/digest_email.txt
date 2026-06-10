@@ -4,7 +4,7 @@ Powered by Open Paws / Animal Legal Defense Fund
 
 Here is what changed in federal animal law today.
 
-{{ section_a | length }} Action Required   {{ section_b | length }} Watchdog Monitoring   {{ section_c | length }} Potential Matches
+{{ section_a | length }} Action Required   {{ section_b | length }} Regulatory Tracking   {{ (section_a + section_b) | selectattr('relevancy', 'equalto', 'HIGH') | list | length }} High Relevance
 
 {% if has_a %}
 ========================================
@@ -14,7 +14,7 @@ ACTION REQUIRED
 
 {% if entry.is_public_inspection %}*** PUBLIC INSPECTION DRAFT — dates may be preliminary ***
 {% endif %}{{ entry.agency_names | join(' / ') | upper }}
-{% if entry.regulation_category %}{{ entry.regulation_category }} | {% endif %}Published {{ entry.publication_date.strftime('%B %d, %Y') }}{% if entry.summarization_tier %} | {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
+{{ entry.relevancy | upper }} RELEVANCE | {% if entry.regulation_category %}{{ entry.regulation_category }} | {% endif %}Published {{ entry.publication_date.strftime('%B %d, %Y') }}{% if entry.summarization_tier %} | {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
 
 {{ entry.title }}
 {% if entry.comments_close_on %}
@@ -48,13 +48,13 @@ Talking Points
 {% if has_b %}
 
 ========================================
-WATCHDOG MONITORING
+REGULATORY TRACKING
 ========================================
 {% for entry in section_b %}
 
 {% if entry.is_public_inspection %}*** PUBLIC INSPECTION DRAFT — dates may be preliminary ***
 {% endif %}{{ entry.agency_names | join(' / ') | upper }}
-{% if entry.regulation_category %}{{ entry.regulation_category }} | {% endif %}Published {{ entry.publication_date.strftime('%B %d, %Y') }}{% if entry.summarization_tier %} | {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
+{{ entry.relevancy | upper }} RELEVANCE | {% if entry.regulation_category %}{{ entry.regulation_category }} | {% endif %}Published {{ entry.publication_date.strftime('%B %d, %Y') }}{% if entry.summarization_tier %} | {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
 
 {{ entry.title }}
 {% if entry.comments_close_on %}
@@ -95,7 +95,7 @@ POTENTIAL MATCHES
 {% if entry.is_needs_confirmation %}UNREVIEWED - ACT WITH CAUTION
 {% endif %}{% if entry.is_public_inspection %}*** PUBLIC INSPECTION DRAFT — dates may be preliminary ***
 {% endif %}{{ entry.agency_names | join(' / ') | upper }}
-{% if entry.regulation_category %}{{ entry.regulation_category }} | {% endif %}Published {{ entry.publication_date.strftime('%B %d, %Y') }}{% if entry.summarization_tier %} | {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
+{{ entry.relevancy | upper }} RELEVANCE | {% if entry.regulation_category %}{{ entry.regulation_category }} | {% endif %}Published {{ entry.publication_date.strftime('%B %d, %Y') }}{% if entry.summarization_tier %} | {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
 
 {{ entry.title }}
 {% if entry.comments_close_on %}

@@ -39,11 +39,12 @@ def _filtered_doc(doc_number="2024-05000", confidence="HIGH") -> FilteredDocumen
     )
 
 
-def _verification_result(is_relevant=True) -> MagicMock:
+def _verification_result(is_relevant=True, relevancy="HIGH") -> MagicMock:
     result = MagicMock()
     result.is_relevant = is_relevant
     result.confidence_reason = "Direct AWA reference."
     result.regulation_category = "Final Rule"
+    result.relevancy = relevancy
     return result
 
 

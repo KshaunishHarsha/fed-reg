@@ -13,19 +13,25 @@ class VerificationResult(BaseModel):
     is_relevant: bool
     confidence_reason: str  # one sentence max
     regulation_category: Literal["Proposed Rule", "Final Rule", "Notice", "Other"]
+    relevancy: Literal["HIGH", "MEDIUM", "LOW"]
 
 
 _HIGH_SYSTEM = (
     "You are a regulatory data extraction assistant for an animal law advocacy organization. "
-    "This document has already been confirmed relevant by keyword match. "
-    "Always set is_relevant=true. Your only tasks are: populate regulation_category "
-    "and write one sentence in confidence_reason describing what the document covers."
+    "This document has already been confirmed relevant by a strong keyword match. "
+    "Always set is_relevant=true and relevancy=HIGH. Your only tasks are: populate "
+    "regulation_category and write one sentence in confidence_reason describing what the "
+    "document covers."
 )
 
 _CONFIRM_SYSTEM = (
     "You are a relevance classifier for an animal law advocacy organization. "
-    "Evaluate whether this federal document is relevant to animal welfare, animal law, "
-    "wildlife protection, or related policy. Set is_relevant accordingly. "
+    "This document matched only weaker contextual keywords, so judge it carefully. "
+    "Evaluate whether it is relevant to animal welfare, animal law, wildlife protection, "
+    "or related policy, and set is_relevant accordingly. "
+    "Then grade relevancy: use MEDIUM when the document is clearly on-topic for animal "
+    "advocacy, and LOW when the connection is tangential, incidental, or uncertain. "
+    "Do not use HIGH — that level is reserved for direct keyword matches. "
     "Populate regulation_category and write one sentence in confidence_reason."
 )
 

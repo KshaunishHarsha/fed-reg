@@ -91,14 +91,14 @@
           </td>
           <td class="stat-cell" align="center"
             style="padding: 20px 16px; width: 33%;">
-            {# VARIABLE: section_c count #}
+            {# High-relevancy count across both sections #}
             <p class="stat-num" style="margin: 0 0 3px;
-              font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: #6B7280; line-height: 1;">
-              {{ section_c | length }}
+              font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: #047857; line-height: 1;">
+              {{ (section_a + section_b) | selectattr('relevancy', 'equalto', 'HIGH') | list | length }}
             </p>
             <p style="margin: 0; font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
               text-transform: uppercase; color: #9CA3AF; line-height: 1.2;">
-              Potential
+              High Relevance
             </p>
           </td>
         </tr>
@@ -178,9 +178,10 @@
               text-transform: uppercase; color: #9CA3AF; line-height: 1;">
               {{ entry.agency_names | join(' &nbsp;·&nbsp; ') | safe }}
             </p>
-            {# Regulation category + publication date + summarization tier #}
+            {# Relevancy + regulation category + publication date + summarization tier #}
+            {% set rcolor = {'HIGH': ['#047857', '#ECFDF5', '#A7F3D0'], 'MEDIUM': ['#B45309', '#FFFBEB', '#FDE68A'], 'LOW': ['#6B7280', '#F3F4F6', '#E5E7EB']}[entry.relevancy or 'MEDIUM'] %}
             <p style="margin: 0 0 12px; font-size: 11px; color: #9CA3AF; line-height: 1.4;">
-              {% if entry.regulation_category %}<span style="display: inline-block; background-color: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 600; color: #1D4ED8; letter-spacing: 0.04em; margin-right: 8px;">{{ entry.regulation_category }}</span>{% endif %}Published {{ entry.publication_date | datefmt }}{% if entry.summarization_tier %} &nbsp;&middot;&nbsp; {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
+              <span style="display: inline-block; background-color: {{ rcolor[1] }}; border: 1px solid {{ rcolor[2] }}; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: {{ rcolor[0] }}; letter-spacing: 0.04em; margin-right: 8px;">{{ entry.relevancy | capitalize }} relevance</span>{% if entry.regulation_category %}<span style="display: inline-block; background-color: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 600; color: #1D4ED8; letter-spacing: 0.04em; margin-right: 8px;">{{ entry.regulation_category }}</span>{% endif %}Published {{ entry.publication_date | datefmt }}{% if entry.summarization_tier %} &nbsp;&middot;&nbsp; {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
             </p>
             {# Title — VARIABLE: entry.title #}
             <p class="mob-title" style="margin: 0 0 14px; font-size: 18px; font-weight: 700;
@@ -409,9 +410,10 @@
               text-transform: uppercase; color: #9CA3AF; line-height: 1;">
               {{ entry.agency_names | join(' &nbsp;·&nbsp; ') | safe }}
             </p>
-            {# Regulation category + publication date + summarization tier #}
+            {# Relevancy + regulation category + publication date + summarization tier #}
+            {% set rcolor = {'HIGH': ['#047857', '#ECFDF5', '#A7F3D0'], 'MEDIUM': ['#B45309', '#FFFBEB', '#FDE68A'], 'LOW': ['#6B7280', '#F3F4F6', '#E5E7EB']}[entry.relevancy or 'MEDIUM'] %}
             <p style="margin: 0 0 12px; font-size: 11px; color: #9CA3AF; line-height: 1.4;">
-              {% if entry.regulation_category %}<span style="display: inline-block; background-color: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 600; color: #1D4ED8; letter-spacing: 0.04em; margin-right: 8px;">{{ entry.regulation_category }}</span>{% endif %}Published {{ entry.publication_date | datefmt }}{% if entry.summarization_tier %} &nbsp;&middot;&nbsp; {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
+              <span style="display: inline-block; background-color: {{ rcolor[1] }}; border: 1px solid {{ rcolor[2] }}; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: {{ rcolor[0] }}; letter-spacing: 0.04em; margin-right: 8px;">{{ entry.relevancy | capitalize }} relevance</span>{% if entry.regulation_category %}<span style="display: inline-block; background-color: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 600; color: #1D4ED8; letter-spacing: 0.04em; margin-right: 8px;">{{ entry.regulation_category }}</span>{% endif %}Published {{ entry.publication_date | datefmt }}{% if entry.summarization_tier %} &nbsp;&middot;&nbsp; {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
             </p>
             {# Title — VARIABLE: entry.title #}
             <p class="mob-title" style="margin: 0 0 14px; font-size: 18px; font-weight: 700;

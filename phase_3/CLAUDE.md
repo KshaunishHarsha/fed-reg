@@ -142,13 +142,16 @@ Phase 2 re-runs the LLM with this error as a system correction note. Max 2 retri
 
 ## Section Classification (digest_builder.py)
 
+Two independent axes. **Section** (action) is driven only by `type` + comment window:
+
 | Condition | Section |
 |---|---|
-| `type=PRORULE` + `confidence=HIGH` + `comments_close_on >= today` | **A** — Action Required |
-| `type=RULE` or `NOTICE` + `confidence=HIGH` | **B** — Watchdog Monitoring |
-| `confidence=NEEDS_CONFIRMATION` (any type) | **C** — Potential Matches |
-| `type=PRORULE` with expired comment window | **C** — Potential Matches |
-| Any other type (PRESDOC, unknown) | **C** — Potential Matches |
+| `type=PRORULE` + `comments_close_on >= today` | **A** — Action Required |
+| everything else (RULE, NOTICE, expired PRORULE, PRESDOC, unknown) | **B** — Regulatory Tracking |
+
+Section C was removed (2026-06-10). Its plumbing (`_section_c`, `section_c_count`, template block) stays but is always empty.
+
+**Relevancy** (confidence) is a separate axis: the `confidence` column now holds `HIGH` / `MEDIUM` / `LOW`, rendered as a per-card badge and used to sort within each section. `_normalize_relevancy()` maps legacy `NEEDS_CONFIRMATION` → `LOW`.
 
 ---
 

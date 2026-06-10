@@ -51,7 +51,7 @@ class DigestRow:
     agency_names: List[str]
     type: Optional[str]                  # PRORULE | RULE | NOTICE | None
     regulation_category: Optional[str]   # Proposed Rule | Final Rule | Notice | Other
-    confidence: Optional[str]            # HIGH | NEEDS_CONFIRMATION
+    confidence: Optional[str]            # relevancy grade: HIGH | MEDIUM | LOW
     comments_close_on: Optional[date]
     effective_on: Optional[date]
     html_url: Optional[str]

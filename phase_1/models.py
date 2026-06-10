@@ -28,6 +28,9 @@ class FilteredDocument(RawDocument):
 
 
 class ConfirmedDocument(FilteredDocument):
+    # Overrides the keyword-tier confidence: this is the stored relevancy grade.
+    # HIGH = strong anchor-keyword match; MEDIUM / LOW = AI-graded context-only docs.
+    confidence: Literal["HIGH", "MEDIUM", "LOW"]
     is_relevant: bool
     regulation_category: str
     filter_reason: str

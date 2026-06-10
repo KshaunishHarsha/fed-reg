@@ -24,7 +24,9 @@ CREATE TABLE documents (
     significant         BOOLEAN,
     publication_date    DATE NOT NULL,
 
-    confidence          TEXT CHECK (confidence IN ('HIGH', 'NEEDS_CONFIRMATION')),
+    -- Relevancy grade (was keyword tier): HIGH = strong anchor match,
+    -- MEDIUM / LOW = AI-graded context-only docs. Drives Phase 3 relevancy badge.
+    confidence          TEXT CHECK (confidence IN ('HIGH', 'MEDIUM', 'LOW')),
     is_relevant         BOOLEAN,
     regulation_category TEXT CHECK (regulation_category IN (
                             'Proposed Rule', 'Final Rule', 'Notice', 'Other'

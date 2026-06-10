@@ -153,7 +153,7 @@ Authoritative schema: **`phase_1/schema.sql`** — run once in Railway SQL Edito
 | `documents` | Phase 1 creates; Phase 2 + 3 update `pipeline_state` | One row per FR document. PK: `document_number`. |
 | `summaries` | Phase 2 | `xml_summary_blob`, `summarization_tier`, `summarization_status`, `correction_attempts`. FK → `documents`. |
 | `filter_audit` | Phase 1 | Every Layer 3 AI decision logged here. No FK to documents (logs dropped docs too). |
-| `mailing_list` | `phase_3/mailing_list.py` via endpoints | Subscriber emails + category preferences for the daily digest. PK: `id`. `email` is UNIQUE. `enabled` flag. 7 `pref_*` boolean columns (default `true`). |
+| `mailing_list` | `phase_3/mailing_list.py` via endpoints | Subscriber emails + preferences for the daily digest. PK: `id`. `email` is UNIQUE. `enabled` flag. 7 `pref_*` category columns + 7 `pref_agency_*` agency columns, all `DEFAULT true`. |
 
 **`pipeline_state` lifecycle:**
 
@@ -206,7 +206,7 @@ POST /run  (main.py)               ← production cron entry point
                     phase_3.digest_builder.build_digest(rows, run_date) [sync]
                     → DigestPackage (html_body, text_body, section counts)
                     → phase_3.mailing_list.get_active_recipients_with_prefs() [async, DB-backed]
-                    → per subscriber: filter sections by allowed_categories set
+                    → per subscriber: filter sections by allowed_categories AND allowed_agencies (AND logic)
                     → phase_3.digest_builder.build_digest(filtered, run_date, _pre_classified=True)
                     → phase_3.mail_test.send_test_digest(recipients=[email])  [SMTP, per subscriber]
                     → if DEMO=true AND all sends succeeded: DELETE FROM documents (reset for re-run)
@@ -233,7 +233,7 @@ POST /run  (main.py)               ← production cron entry point
 | `POST /phase3/validate/test` | `phase_3/router.py` | Dev — validate a raw XML blob in isolation |
 | `GET /phase3/subscribers` | `phase_3/router.py` | Demo frontend — list active subscribers `[{email, created_at, preferences}]` |
 | `POST /phase3/subscribe` | `phase_3/router.py` | Demo frontend — add/re-enable email on mailing list; accepts optional `preferences` dict |
-| `PATCH /phase3/preferences` | `phase_3/router.py` | Update category preferences for an existing subscriber |
+| `PATCH /phase3/preferences` | `phase_3/router.py` | Update category and/or agency preferences for an existing subscriber |
 | `DELETE /phase3/unsubscribe` | `phase_3/router.py` | Demo frontend — soft-delete email (sets `enabled=false`) |
 
 ---
@@ -269,6 +269,9 @@ FR's `document_number` is the unique ID. It's the primary key everywhere. `is_al
 ### No date extraction from AI
 `comments_close_on` and `effective_on` come directly from the FR API. `VerificationResult` has no date fields — prevents hallucinated dates.
 
+### Relevancy grade (hybrid: keyword + AI)
+`VerificationResult.relevancy` is `HIGH` / `MEDIUM` / `LOW`. Pipeline auto-maps anchor-keyword hits (keyword tier `HIGH`) to `HIGH` without trusting the AI; context-only docs (keyword tier `NEEDS_CONFIRMATION`) take the AI's `MEDIUM` / `LOW` grade. The result is written to `documents.confidence` (column repurposed from the old keyword tier). The keyword tier itself stays internal to Phase 1 and is still logged to `filter_audit.layer2_confidence`. Phase 3 renders this as a relevancy badge (see Phase 3 section classification).
+
 ### context_block stored in DB
 Phase 2 Tier 3 (>50 page docs) reuses the `context_block` Phase 1 assembled. Avoids re-downloading PDFs.
 
@@ -276,7 +279,28 @@ Phase 2 Tier 3 (>50 page docs) reuses the `context_block` Phase 1 assembled. Avo
 Phase 1 is synchronous. `database.py` connects via `psycopg2` using `DATABASE_URL` (strips `+asyncpg` prefix). All functions open a fresh connection, use a `RealDictCursor`, and close in a `try/finally`. `save_confirmed_document()` uses `INSERT ... ON CONFLICT (document_number) DO NOTHING`. Never overwrites.
 
 ### Keyword config — YAML is the only source of truth
-`keywords.yaml` has four lists: `anchor_terms` (substring match), `anchor_terms_word_boundary` (regex `\b`), `context_terms`, `noise_title_keywords`. All terms are lowercased at load time in `config.py`. No DB table for keywords — YAML is it. Abbreviations (AWA, APHIS, NMFS, etc.) are in `anchor_terms_word_boundary` to avoid false positives (e.g., "award"). CITES excluded entirely since "cites" is a common verb.
+`keywords.yaml` has four global lists: `anchor_terms` (substring match), `anchor_terms_word_boundary` (regex `\b`), `context_terms`, `noise_title_keywords`. All terms are lowercased at load time in `config.py`. No DB table for keywords — YAML is it. Abbreviations (AWA, APHIS, NMFS, etc.) are in `anchor_terms_word_boundary` to avoid false positives (e.g., "award"). CITES excluded entirely since "cites" is a common verb.
+
+### Agency-specific filtering
+Added 2026-06-10. Each of the 7 target agencies has a different signal-to-noise profile, so `keywords.yaml` also has an `agency_filters` section keyed by FR agency slug. Each entry supports three optional fields:
+
+- `extra_anchor_terms`: agency-scoped phrases that give HIGH confidence (unambiguous within this agency's domain but too noisy globally).
+- `extra_context_terms`: agency-scoped terms scored +1 each, added to the global pool.
+- `context_threshold_override`: replaces `CONTEXT_THRESHOLD` for docs from this agency.
+
+| Agency | Threshold override | Rationale |
+|--------|-------------------|-----------|
+| APHIS | 1 (lower) | Almost exclusively animal-welfare relevant |
+| FSIS | 1 (lower) | Tightly focused on humane slaughter |
+| FWS | 1 (lower) | ESA listings, refuge rules — very high relevance |
+| NOAA | none (uses global 2) | High relevance but benefits from fishery-specific extra terms |
+| FDA | 3 (higher) | Mostly human food/drugs; animal docs are a small fraction |
+| NIH | 3 (higher) | Mostly human health research |
+| AMS | 3 (higher) | Market orders; low relevance unless touching livestock welfare |
+
+**Multi-agency docs:** the most permissive threshold among matching agencies wins (false-negatives-are-worse policy).
+
+**Implementation:** `RawDocument` now carries `agency_slugs: List[str]` (populated from the FR API `agencies` array in `ingestion.py`). `config.py` loads agency filters into `AGENCY_FILTERS: dict[str, AgencyFilter]` (`AgencyFilter` is a dataclass). `keyword_filter._score_keywords()` looks up each doc's slugs, checks agency-specific anchor terms before globals, merges extra context terms into scoring, and picks the most permissive threshold.
 
 ### Audit log has no FK to documents
 `filter_audit` logs every doc reaching Layer 3, including those dropped (`is_relevant=False`). A FK would prevent logging drops.
@@ -377,13 +401,21 @@ From `phase_3/models.py` — `ValidatedSummary`:
 - `suggested_talking_points`: 1–3 items, ≤ 25 words each, no URLs
 - `disclaimer`: must be exactly `"This summary is informational only and does not constitute legal advice."`
 
-### Section classification
+### Section classification + relevancy (two independent axes)
+**Section (action axis)** — driven only by `type` + comment window:
 | Condition | Section |
 |-----------|---------|
-| `type=PRORULE` + `confidence=HIGH` + `comments_close_on >= today` | **A** — Action Required |
-| `type=RULE` or `NOTICE` + `confidence=HIGH` | **B** — Regulatory Tracking |
-| `confidence=NEEDS_CONFIRMATION` (any type) | **C** — Potential Matches |
-| `type=PRORULE` with expired comment window | **C** — Potential Matches |
+| `type=PRORULE` + `comments_close_on >= today` | **A** — Action Required |
+| everything else (RULE, NOTICE, expired PRORULE, other types) | **B** — Regulatory Tracking |
+
+Section C was removed (2026-06-10). It conflated low confidence with stale-but-relevant docs; both now live in A/B with a relevancy badge instead. The C plumbing (`_section_c`, `section_c_count`, template block) is retained but always empty, so the orchestrator needs no change.
+
+**Relevancy (confidence axis)** — the `documents.confidence` column, repurposed to hold `HIGH` / `MEDIUM` / `LOW`:
+- `HIGH` = strong keyword anchor match (Phase 1 auto-maps anchor hits).
+- `MEDIUM` / `LOW` = AI-graded in `verify_document()` for context-only docs.
+- Rendered as a per-card badge and used to sort entries within each section (HIGH first).
+- `digest_builder._normalize_relevancy()` maps legacy `NEEDS_CONFIRMATION` → `LOW`, unknown/missing → `MEDIUM`.
+- Migration for an existing Railway DB: run `phase_1/migration_relevancy.sql` (converts data + swaps the CHECK constraint).
 
 ### Static link rule (never break)
 All email links are built from DB columns only. The LLM must never produce URLs. Validator strips them silently.
@@ -414,10 +446,10 @@ from phase_3.mailing_list import (
     update_preferences,
     disable_subscriber,
 )
-await add_subscriber(email, preferences={"pref_wildlife": True, ...})  # upsert, prefs optional
+await add_subscriber(email, preferences={"pref_wildlife": True, "pref_agency_fda": False, ...})  # upsert, prefs optional
 recipients = await get_active_recipients()                # List[str] — for zero-result path
-subs = await get_active_recipients_with_prefs()          # List[{email, allowed_categories: set[str]}]
-await update_preferences(email, {"pref_trade": False})   # update subset of prefs
+subs = await get_active_recipients_with_prefs()          # List[{email, allowed_categories: set[str], allowed_agencies: set[str]}]
+await update_preferences(email, {"pref_trade": False, "pref_agency_nih": False})  # update subset of prefs (category and/or agency)
 subs = await get_active_subscribers()                    # List[{email, created_at, preferences}] for UI
 await disable_subscriber(email)                          # sets enabled=false (soft delete)
 
@@ -428,11 +460,11 @@ package = build_digest([], run_date, _pre_classified=True, _section_a=fa, _secti
 
 ### Mailing list — design notes
 - `mailing_list` table is the single source of truth for subscriber addresses. `test_recipients.yaml` is a dev-only fallback used only when the DB list is empty.
-- `add_subscriber` accepts an optional `preferences` dict `{pref_col: bool}`. Missing keys default to `True`. Uses `ON CONFLICT (email) DO UPDATE` — idempotent.
+- `add_subscriber` accepts an optional `preferences` dict `{pref_col: bool}` for any mix of category (`pref_*`) and agency (`pref_agency_*`) columns. Missing keys default to `True`. Uses `ON CONFLICT (email) DO UPDATE` — idempotent.
 - `get_active_recipients` returns `[]` (not an error) when the table is empty — orchestrator skips email and DEMO cleanup.
-- `get_active_recipients_with_prefs` returns `[{email, allowed_categories: set[str]}]` — used by orchestrator to filter each subscriber's digest.
-- `get_active_subscribers` returns full rows with `created_at` and `preferences` dict — used by the Astro frontend subscriber panel.
-- `update_preferences(email, prefs_dict)` updates only the supplied columns — partial update safe.
+- `get_active_recipients_with_prefs` returns `[{email, allowed_categories: set[str], allowed_agencies: set[str]}]` — used by orchestrator to filter each subscriber's digest with AND logic.
+- `get_active_subscribers` returns full rows with `created_at` and `preferences` dict (all 14 columns) — used by the Astro frontend subscriber panel.
+- `update_preferences(email, prefs_dict)` accepts any mix of category and agency pref keys, updates only the supplied columns — partial update safe.
 - `disable_subscriber` soft-deletes: row stays in table, `enabled=false`. Re-subscribing via `add_subscriber` re-enables it.
 
 ### DEMO mode cleanup — invariants
@@ -455,17 +487,22 @@ package = build_digest([], run_date, _pre_classified=True, _section_a=fa, _secti
 
 ---
 
-## Subscriber Category Preferences
+## Subscriber Preferences
 
-Added 2026-06-10. Allows each subscriber to choose which document categories they receive.
+Category preferences added 2026-06-10. Agency preferences added 2026-06-10.
 
 ### DB schema (mailing_list)
-Seven boolean columns, all `DEFAULT true`:
+Fourteen boolean columns, all `DEFAULT true`:
 ```
+-- Category (7)
 pref_welfare, pref_wildlife, pref_agriculture, pref_agricultural_subsidies,
 pref_research_animals, pref_marine, pref_trade
+
+-- Agency (7)
+pref_agency_ams, pref_agency_aphis, pref_agency_fsis, pref_agency_fda,
+pref_agency_noaa, pref_agency_fws, pref_agency_nih
 ```
-To add these to an existing Railway deployment, run `migrate_add_preferences.py` (gitignored — contains hardcoded DB URL). New schema.sql already includes them.
+New `schema.sql` includes all 14 columns. Existing Railway deployments need migration (run `migrate_add_preferences.py`, gitignored).
 
 ### Category codes → display labels
 | DB / Phase 2 code | Email sub-heading & UI label |
@@ -480,9 +517,22 @@ To add these to an existing Railway deployment, run `migrate_add_preferences.py`
 
 Labels are defined in `CATEGORY_LABELS` dict in `phase_3/digest_builder.py`.
 
+### Agency preference columns → canonical names
+| DB column | Canonical name (matched against DigestEntry.agency_names) |
+|---|---|
+| `pref_agency_ams` | Agricultural Marketing Service |
+| `pref_agency_aphis` | Animal and Plant Health Inspection Service |
+| `pref_agency_fsis` | Food Safety and Inspection Service |
+| `pref_agency_fda` | Food and Drug Administration |
+| `pref_agency_noaa` | National Oceanic and Atmospheric Administration |
+| `pref_agency_fws` | Fish and Wildlife Service |
+| `pref_agency_nih` | National Institutes of Health |
+
+Defined in `AGENCY_PREF_COLUMNS` in `phase_3/mailing_list.py`. Matching uses substring search against `DigestEntry.agency_names` (handles FR API name variations).
+
 ### Per-subscriber email flow
-1. Orchestrator calls `get_active_recipients_with_prefs()` → list of `{email, allowed_categories}`.
-2. For each subscriber: filter `package._section_a/b/c` entries where `regulation_category in allowed_categories`.
+1. Orchestrator calls `get_active_recipients_with_prefs()` → list of `{email, allowed_categories, allowed_agencies}`.
+2. For each subscriber: filter `package._section_a/b/c` entries using AND logic — a document appears only if its `regulation_category` is in `allowed_categories` AND at least one of its `agency_names` matches a name in `allowed_agencies`.
 3. If no documents match → skip (no blank email sent).
 4. Call `build_digest(..., _pre_classified=True, _section_a=fa, _section_b=fb, _section_c=fc)` to render a personalized HTML/text body.
 5. Send via `send_test_digest(recipients=[email])` — one SMTP call per subscriber.
@@ -491,10 +541,10 @@ Labels are defined in `CATEGORY_LABELS` dict in `phase_3/digest_builder.py`.
 `phase_2/summarizer.py` lists `agricultural_subsidies` as a valid `regulation_category` with explicit instructions (USDA loans, CAFO financing, livestock indemnity payments).
 
 ### Frontend (Astro)
-- Subscribe form shows a 2-column checkbox grid, all ticked by default.
-- JS reads checkboxes and POSTs `{email, preferences: {pref_*: bool}}` to `POST /phase3/subscribe`.
-- Subscriber list renders active category tags (abbreviated labels) under each row.
-- `PATCH /phase3/preferences` endpoint allows updating preferences without re-subscribing.
+- Subscribe form shows two 2-column checkbox grids: one for categories, one for agencies. All ticked by default.
+- JS reads all checkboxes by name and POSTs `{email, preferences: {pref_*: bool, pref_agency_*: bool}}` to `POST /phase3/subscribe`.
+- Subscriber list renders category tags (grey) and agency tags (teal) under each row.
+- `PATCH /phase3/preferences` endpoint accepts any mix of `pref_*` and `pref_agency_*` keys.
 
 ---
 
