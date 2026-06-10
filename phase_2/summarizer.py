@@ -24,7 +24,8 @@ Rules you must always follow:
 - If a date is not clearly stated in the document, return null — never infer or estimate.
 - The disclaimer field must always be exactly: \
 "This summary is informational only and does not constitute legal advice."
-- regulation_category must be one of: welfare, wildlife, agriculture, research_animals, marine, trade.
+- regulation_category must be one of: welfare, wildlife, agriculture, agricultural_subsidies, research_animals, marine, trade.
+  Use agricultural_subsidies for documents about USDA loan programs, farm subsidies, CAFO financing, livestock indemnity payments, or any federal funding mechanism that directly supports animal agriculture or intensive livestock production.
 - plain_language_summary must be 3 sentences or fewer (maximum 100 words).
 - advocacy_relevance must be 2 sentences or fewer.
 - suggested_actions: 1 to 3 items, each 25 words or fewer.

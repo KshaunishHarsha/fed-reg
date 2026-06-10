@@ -145,6 +145,56 @@ def _build_comment_url(comment_url: Optional[str]) -> Optional[str]:
 
 
 # ---------------------------------------------------------------------------
+# Category helpers
+# ---------------------------------------------------------------------------
+
+# Human-readable labels for regulation_category codes from Phase 2
+CATEGORY_LABELS: Dict[str, str] = {
+    "welfare":                "Animal Welfare",
+    "wildlife":               "Wildlife",
+    "agriculture":            "Farm Animals",
+    "agricultural_subsidies": "Agricultural Subsidies & Financing",
+    "research_animals":       "Research Animals",
+    "marine":                 "Marine Animals",
+    "trade":                  "Trade & Import/Export",
+}
+
+# Preferred display order for categories within a section
+_CATEGORY_ORDER = [
+    "welfare",
+    "wildlife",
+    "agriculture",
+    "agricultural_subsidies",
+    "research_animals",
+    "marine",
+    "trade",
+]
+
+
+def _group_by_category(entries: List[DigestEntry]) -> List[Dict[str, Any]]:
+    """
+    Group a flat list of DigestEntry objects by regulation_category.
+    Returns a list of dicts: [{label: str, entries: [DigestEntry]}]
+    ordered by _CATEGORY_ORDER, with unknown categories appended at the end.
+    """
+    buckets: Dict[str, List[DigestEntry]] = {}
+    for entry in entries:
+        cat = (entry.regulation_category or "other").lower()
+        buckets.setdefault(cat, []).append(entry)
+
+    ordered_cats = [c for c in _CATEGORY_ORDER if c in buckets]
+    remaining = [c for c in buckets if c not in _CATEGORY_ORDER]
+    groups = []
+    for cat in ordered_cats + remaining:
+        groups.append({
+            "label": CATEGORY_LABELS.get(cat, cat.replace("_", " ").title()),
+            "entries": buckets[cat],
+        })
+    return groups
+
+
+
+# ---------------------------------------------------------------------------
 # Section classifier
 # ---------------------------------------------------------------------------
 
@@ -319,6 +369,10 @@ def build_digest(rows: List[DigestRow], digest_date: date) -> DigestPackage:
         "section_a": section_a,
         "section_b": section_b,
         "section_c": section_c,
+        # Category-grouped views for visual filtering in the email
+        "section_a_groups": _group_by_category(section_a),
+        "section_b_groups": _group_by_category(section_b),
+        "section_c_groups": _group_by_category(section_c),
         "has_a": bool(section_a),
         "has_b": bool(section_b),
         "has_c": bool(section_c),

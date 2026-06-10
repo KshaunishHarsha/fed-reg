@@ -86,7 +86,7 @@
             </p>
             <p style="margin: 0; font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
               text-transform: uppercase; color: #9CA3AF; line-height: 1.2;">
-              Watchdog
+              Regulatory Tracking
             </p>
           </td>
           <td class="stat-cell" align="center"
@@ -139,10 +139,19 @@
     </td>
   </tr>
 
-  {# Cards #}
+  {# Cards — grouped by regulation_category #}
   <tr>
     <td class="mob-pad" style="padding: 0 40px 32px; background-color: #FFFFFF;">
-      {% for entry in section_a %}
+      {% for group in section_a_groups %}
+      {# Category sub-heading #}
+      {% if section_a_groups | length > 1 %}
+      <p style="margin: 0 0 14px {% if not loop.first %}; margin-top: 24px{% endif %};
+        font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+        color: #B45309; border-bottom: 1px solid #FDE68A; padding-bottom: 8px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;"
+      >{{ group.label }}</p>
+      {% endif %}
+      {% for entry in group.entries %}
       {# ── Card ──────────────────────────────────────────────────────────── #}
       {# VARIABLE: entry.* — see DigestEntry dataclass in digest_builder.py #}
       <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"
@@ -320,7 +329,8 @@
 
       </table>
       {# ── End card ── #}
-      {% endfor %}
+      {% endfor %}{# end group.entries #}
+      {% endfor %}{# end section_a_groups #}
     </td>
   </tr>
   {% endif %}
@@ -351,7 +361,7 @@
           <td valign="middle" style="padding-left: 8px;">
             <p style="margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.09em;
               text-transform: uppercase; color: #1B3A5C; line-height: 1;">
-              Watchdog Monitoring
+              Regulatory Tracking
             </p>
           </td>
           <td valign="middle" style="padding-left: 14px;">
@@ -362,10 +372,19 @@
     </td>
   </tr>
 
-  {# Cards #}
+  {# Cards — grouped by regulation_category #}
   <tr>
     <td class="mob-pad" style="padding: 0 40px 32px; background-color: #FFFFFF;">
-      {% for entry in section_b %}
+      {% for group in section_b_groups %}
+      {# Category sub-heading #}
+      {% if section_b_groups | length > 1 %}
+      <p style="margin: 0 0 14px {% if not loop.first %}; margin-top: 24px{% endif %};
+        font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+        color: #1B3A5C; border-bottom: 1px solid #DBEAFE; padding-bottom: 8px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;"
+      >{{ group.label }}</p>
+      {% endif %}
+      {% for entry in group.entries %}
       <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"
         style="background-color: #FFFFFF; border: 1px solid #E5E7EB;
                border-left: 4px solid #1B3A5C; border-radius: 8px;
@@ -530,7 +549,8 @@
         </tr>
         {% endif %}
       </table>
-      {% endfor %}
+      {% endfor %}{# end group.entries #}
+      {% endfor %}{# end section_b_groups #}
     </td>
   </tr>
   {% endif %}
@@ -571,10 +591,19 @@
     </td>
   </tr>
 
-  {# Cards #}
+  {# Cards — grouped by regulation_category #}
   <tr>
     <td class="mob-pad" style="padding: 0 40px 32px; background-color: #FFFFFF;">
-      {% for entry in section_c %}
+      {% for group in section_c_groups %}
+      {# Category sub-heading #}
+      {% if section_c_groups | length > 1 %}
+      <p style="margin: 0 0 14px {% if not loop.first %}; margin-top: 24px{% endif %};
+        font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+        color: #6B7280; border-bottom: 1px solid #E5E7EB; padding-bottom: 8px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;"
+      >{{ group.label }}</p>
+      {% endif %}
+      {% for entry in group.entries %}
       <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"
         style="background-color: #FAFAFA; border: 1px solid #E5E7EB;
                border-left: 4px solid #D1D5DB; border-radius: 8px;
@@ -748,7 +777,8 @@
         </tr>
         {% endif %}
       </table>
-      {% endfor %}
+      {% endfor %}{# end group.entries #}
+      {% endfor %}{# end section_c_groups #}
     </td>
   </tr>
   {% endif %}
