@@ -761,6 +761,183 @@ noise_title_keywords:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# AGENCY-SPECIFIC FILTERS
+# Keyed by Federal Register agency slug (matches TARGET_AGENCY_SLUGS in config.py).
+#
+# extra_anchor_terms        → agency-scoped phrases that give HIGH confidence.
+#                             Use for vocabulary unambiguous within this agency's
+#                             domain but too noisy to add globally.
+# extra_context_terms       → agency-scoped terms scored +1 each.
+# context_threshold_override → replaces CONTEXT_THRESHOLD for docs from this
+#                              agency. Omit to use the global default.
+#
+# Multi-agency documents: the most permissive threshold among matching agencies
+# wins (consistent with false-negatives-are-worse policy).
+# ═══════════════════════════════════════════════════════════════════════════════
+
+agency_filters:
+
+  # APHIS — nearly all publications are animal-welfare relevant.
+  # Lower threshold to catch edge-case docs that score only 1 context term.
+  animal-and-plant-health-inspection-service:
+    context_threshold_override: 1
+    extra_anchor_terms:
+      - animal import permit
+      - animal export permit
+      - swine health protection
+      - poultry import regulations
+      - interstate movement of animals
+      - animal disease traceability
+      - national animal identification
+      - scrapie identification
+      - brucellosis surveillance
+      - tuberculosis eradication
+      - equine infectious anemia
+    extra_context_terms:
+      - aphis permit
+      - aphis inspection
+      - animal movement permit
+      - livestock import
+      - livestock export
+
+  # FSIS — humane slaughter and meat/poultry inspection.
+  # Already high relevance; lower threshold and add inspection-specific vocab.
+  food-safety-and-inspection-service:
+    context_threshold_override: 1
+    extra_anchor_terms:
+      - humane handling requirement
+      - stunning verification
+      - poultry slaughter regulation
+      - swine slaughter regulation
+      - cattle slaughter regulation
+      - ante-mortem condemnation
+      - post-mortem condemnation
+      - inspector assignment
+      - continuous inspection
+      - fsis directive
+    extra_context_terms:
+      - inspector general
+      - slaughter inspection
+      - processing inspection
+      - inspector presence
+      - condemned animal
+
+  # FWS — ESA listings, permits, refuge rules, hunting regulations.
+  # Very high relevance; lower threshold.
+  fish-and-wildlife-service:
+    context_threshold_override: 1
+    extra_anchor_terms:
+      - migratory bird permit
+      - eagle incidental take permit
+      - eagle nest disturbance
+      - raptor propagation
+      - wildlife refuge management
+      - refuge comprehensive conservation plan
+      - depredation order
+      - special use permit wildlife
+      - falconry permit
+      - taxidermy permit
+      - captive wildlife permit
+      - import of live wildlife
+      - export of live wildlife
+    extra_context_terms:
+      - national wildlife refuge
+      - refuge unit
+      - permit application fws
+      - take of migratory birds
+      - eagle permit
+
+  # NOAA/NMFS — fisheries management, marine protected species, bycatch limits.
+  # Moderate relevance; use default threshold but add fishery-specific vocab.
+  national-oceanic-and-atmospheric-administration:
+    extra_anchor_terms:
+      - fishery management plan
+      - annual catch limit
+      - total allowable catch
+      - essential fish habitat
+      - overfishing limit
+      - acceptable biological catch
+      - bycatch reduction device
+      - bycatch limit
+      - protected species take reduction
+      - take reduction plan
+      - take reduction team
+      - large whale entanglement
+      - right whale
+      - north atlantic right whale
+      - pacific salmon recovery
+      - salmon habitat
+    extra_context_terms:
+      - catch limit
+      - fishing quota
+      - marine protected area
+      - fishery observer
+      - gear restriction
+      - closed area
+      - season closure
+      - limited entry fishery
+      - stock assessment
+
+  # FDA — broad mandate; animal-relevant docs are a small fraction.
+  # Raise threshold to reduce false positives from human food/drug rulemakings.
+  food-and-drug-administration:
+    context_threshold_override: 3
+    extra_anchor_terms:
+      - new animal drug application
+      - abbreviated new animal drug
+      - veterinary biologics license
+      - animal drug user fee
+      - medicated feed license
+      - veterinary feed directive
+      - animal feed ingredient definition
+      - animal food safety
+      - antimicrobial drug use in animals
+      - veterinary prescription drug
+    extra_context_terms:
+      - animal drug
+      - veterinary drug
+      - animal food
+      - medicated feed
+      - fda veterinary
+
+  # NIH — mostly human health research; animal welfare is a small slice.
+  # Raise threshold significantly.
+  national-institutes-of-health:
+    context_threshold_override: 3
+    extra_anchor_terms:
+      - iacuc protocol review
+      - animal welfare assurance
+      - public health service policy on humane care
+      - phs policy on humane care
+      - olaw assurance
+      - nonhuman primate research policy
+      - chimpanzee research policy
+    extra_context_terms:
+      - animal assurance
+      - iacuc approval
+      - animal use protocol
+      - humane care and use
+
+  # AMS — market orders, organic rules, grade standards.
+  # Low relevance unless directly touching livestock welfare; raise threshold.
+  agricultural-marketing-service:
+    context_threshold_override: 3
+    extra_anchor_terms:
+      - organic livestock standard
+      - organic poultry standard
+      - pasture access requirement
+      - outdoor access requirement
+      - organic animal husbandry
+      - live poultry dealer
+      - packers and stockyards
+    extra_context_terms:
+      - organic livestock
+      - organic poultry
+      - animal identification requirement
+      - livestock grading
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # BONUS: CFR PART CITATIONS
 # If your regex engine scans document text, these CFR references are
 # high-precision anchors. Add to anchor_terms or a separate CFR layer.

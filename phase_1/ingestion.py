@@ -72,12 +72,16 @@ def _parse_published(item: dict, target_date: date) -> RawDocument | None:
         pub_date = target_date
 
     agency_names = item.get("agency_names") or []
+    agency_slugs = [
+        a.get("slug", "") for a in (item.get("agencies") or []) if isinstance(a, dict) and a.get("slug")
+    ]
 
     return RawDocument(
         document_number=doc_number,
         title=item.get("title", ""),
         abstract=item.get("abstract") or None,
         agency_names=agency_names,
+        agency_slugs=agency_slugs,
         document_type=item.get("document_type"),
         type=item.get("type"),
         subtype=item.get("subtype"),
@@ -135,12 +139,14 @@ def _parse_inspection(item: dict, target_date: date) -> RawDocument | None:
         for a in agencies
         if isinstance(a, dict)
     ]
+    agency_slugs = [a.get("slug", "") for a in agencies if isinstance(a, dict) and a.get("slug")]
 
     return RawDocument(
         document_number=doc_number,
         title=item.get("title", ""),
         abstract=item.get("abstract") or None,
         agency_names=agency_names,
+        agency_slugs=agency_slugs,
         document_type=item.get("document_type"),
         type=item.get("type"),
         subtype=item.get("subtype"),

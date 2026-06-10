@@ -94,8 +94,8 @@ def test_anchor_endangered_species_act_returns_high():
 
 def test_one_context_term_is_dropped():
     # score = 1 < CONTEXT_THRESHOLD (2) → dropped
-    doc = _doc(title="Livestock Feed Additive Notice", type="NOTICE")
-    # "livestock" = 1 point — below threshold
+    doc = _doc(title="Livestock Safety Standards Notice", type="NOTICE")
+    # "livestock" = 1 point, nothing else matches — below threshold
     result = apply_keyword_filter(doc)
     assert result is None
 

@@ -53,16 +53,39 @@ def _is_noise(doc: RawDocument) -> bool:
 def _score_keywords(doc: RawDocument) -> Optional[str]:
     text = f"{doc.title} {doc.abstract or ''}".lower()
 
+    # Collect agency-specific filters for this document's agencies
+    agency_filters = [
+        config.AGENCY_FILTERS[slug]
+        for slug in doc.agency_slugs
+        if slug in config.AGENCY_FILTERS
+    ]
+
+    # Check global anchor terms first
     if any(term in text for term in config.ANCHOR_TERMS):
         return "HIGH"
     if config.ANCHOR_WB_PATTERN and config.ANCHOR_WB_PATTERN.search(text):
         return "HIGH"
 
-    score = sum(1 for term in config.CONTEXT_TERMS if term in text)
-    if score >= config.CONTEXT_THRESHOLD:
+    # Check agency-specific anchor terms
+    for af in agency_filters:
+        if any(term in text for term in af.extra_anchor_terms):
+            return "HIGH"
+
+    # Context scoring: global terms + agency-specific terms combined
+    extra_context = {term for af in agency_filters for term in af.extra_context_terms}
+    all_context_terms = list(config.CONTEXT_TERMS) + list(extra_context)
+    score = sum(1 for term in all_context_terms if term in text)
+
+    # Most permissive threshold wins across all matching agencies
+    threshold = config.CONTEXT_THRESHOLD
+    for af in agency_filters:
+        if af.context_threshold_override is not None:
+            threshold = min(threshold, af.context_threshold_override)
+
+    if score >= threshold:
         return "NEEDS_CONFIRMATION"
 
-    print(f"[KEYWORD DROP] {doc.document_number} — score: {score}")
+    print(f"[KEYWORD DROP] {doc.document_number} — score: {score} (threshold: {threshold})")
     return None
 
 

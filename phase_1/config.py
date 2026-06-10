@@ -1,5 +1,7 @@
 import re
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional
 
 import yaml
 
@@ -17,6 +19,27 @@ ANCHOR_WB_PATTERN: re.Pattern | None = (
     re.compile(r"\b(" + "|".join(re.escape(t) for t in _wb_terms) + r")\b")
     if _wb_terms else None
 )
+
+
+@dataclass
+class AgencyFilter:
+    extra_anchor_terms: list[str] = field(default_factory=list)
+    extra_context_terms: list[str] = field(default_factory=list)
+    context_threshold_override: Optional[int] = None
+
+
+def _load_agency_filters(raw: dict) -> dict[str, AgencyFilter]:
+    result: dict[str, AgencyFilter] = {}
+    for slug, cfg in (raw or {}).items():
+        result[slug] = AgencyFilter(
+            extra_anchor_terms=[t.lower() for t in (cfg.get("extra_anchor_terms") or [])],
+            extra_context_terms=[t.lower() for t in (cfg.get("extra_context_terms") or [])],
+            context_threshold_override=cfg.get("context_threshold_override"),
+        )
+    return result
+
+
+AGENCY_FILTERS: dict[str, AgencyFilter] = _load_agency_filters(_kw.get("agency_filters"))
 
 # ── Static pipeline config ─────────────────────────────────────────────────────
 TARGET_AGENCY_SLUGS = [

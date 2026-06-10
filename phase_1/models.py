@@ -8,6 +8,7 @@ class RawDocument(BaseModel):
     title: str
     abstract: Optional[str] = None
     agency_names: List[str] = []
+    agency_slugs: List[str] = []
     document_type: Optional[str] = None
     type: Optional[str] = None
     subtype: Optional[str] = None

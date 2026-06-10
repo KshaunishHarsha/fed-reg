@@ -20,7 +20,7 @@ def load_test_keywords():
     import config
 
     kw_path = Path(__file__).parent.parent / "keywords.yaml"
-    with open(kw_path) as f:
+    with open(kw_path, encoding="utf-8") as f:
         kw = yaml.safe_load(f)
 
     config.ANCHOR_TERMS = [t.lower() for t in kw.get("anchor_terms", [])]
@@ -32,3 +32,5 @@ def load_test_keywords():
         re.compile(r"\b(" + "|".join(re.escape(t) for t in wb_terms) + r")\b")
         if wb_terms else None
     )
+
+    config.AGENCY_FILTERS = config._load_agency_filters(kw.get("agency_filters"))
