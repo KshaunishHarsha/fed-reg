@@ -315,10 +315,11 @@ def build_digest(
 
     # -- Pre-classified fast-path (per-subscriber re-rendering) -----------------
     if _pre_classified:
+        # Entries are already-assembled DigestEntry objects — skip classification
+        # entirely and render straight from the supplied lists.
         section_a = list(_section_a or [])
         section_b = list(_section_b or [])
         section_c = list(_section_c or [])
-        # Skip straight to template rendering below
     # -- Circuit breaker --------------------------------------------------------
     elif not rows:
         logger.info(
@@ -337,51 +338,51 @@ def build_digest(
             text_body=text_body,
             is_zero_result=True,
         )
+    # -- Assemble entries from raw DigestRow objects ----------------------------
+    else:
+        section_a = []
+        section_b = []
+        section_c = []
 
-    # -- Assemble entries -------------------------------------------------------
-    section_a: List[DigestEntry] = []
-    section_b: List[DigestEntry] = []
-    section_c: List[DigestEntry] = []
+        for row in rows:
+            section = _classify_section(row, today)
+            llm = _parse_llm_fields(row)
 
-    for row in rows:
-        section = _classify_section(row, today)
-        llm = _parse_llm_fields(row)
+            entry = DigestEntry(
+                document_number=row.document_number,
+                title=row.title,
+                agency_names=row.agency_names,
+                regulation_category=row.regulation_category,
+                comments_close_on=row.comments_close_on,
+                effective_on=row.effective_on,
+                publication_date=row.publication_date,
+                source_url=_build_source_url(row.document_number),
+                comment_portal_url=_build_comment_url(row.comment_url),
+                plain_language_summary=llm["plain_language_summary"],
+                advocacy_relevance=llm["advocacy_relevance"],
+                suggested_actions=llm["suggested_actions"],
+                suggested_talking_points=llm["suggested_talking_points"],
+                disclaimer=llm.get("disclaimer", _DISCLAIMER),
+                is_public_inspection=(row.abstract is None),
+                comments_days_left=(
+                    (row.comments_close_on - today).days
+                    if row.comments_close_on is not None
+                    else None
+                ),
+                summarization_tier=row.summarization_tier,
+                section=section,
+                relevancy=_normalize_relevancy(row.confidence),
+            )
 
-        entry = DigestEntry(
-            document_number=row.document_number,
-            title=row.title,
-            agency_names=row.agency_names,
-            regulation_category=row.regulation_category,
-            comments_close_on=row.comments_close_on,
-            effective_on=row.effective_on,
-            publication_date=row.publication_date,
-            source_url=_build_source_url(row.document_number),
-            comment_portal_url=_build_comment_url(row.comment_url),
-            plain_language_summary=llm["plain_language_summary"],
-            advocacy_relevance=llm["advocacy_relevance"],
-            suggested_actions=llm["suggested_actions"],
-            suggested_talking_points=llm["suggested_talking_points"],
-            disclaimer=llm.get("disclaimer", _DISCLAIMER),
-            is_public_inspection=(row.abstract is None),
-            comments_days_left=(
-                (row.comments_close_on - today).days
-                if row.comments_close_on is not None
-                else None
-            ),
-            summarization_tier=row.summarization_tier,
-            section=section,
-            relevancy=_normalize_relevancy(row.confidence),
-        )
+            if section == "A":
+                section_a.append(entry)
+            else:
+                section_b.append(entry)
 
-        if section == "A":
-            section_a.append(entry)
-        else:
-            section_b.append(entry)
-
-    # Within each section, surface higher-relevancy documents first.
-    # Section A keeps the query's deadline ordering as the tie-breaker.
-    section_a.sort(key=lambda e: _RELEVANCY_RANK.get(e.relevancy, 1))
-    section_b.sort(key=lambda e: (_RELEVANCY_RANK.get(e.relevancy, 1), e.document_number))
+        # Within each section, surface higher-relevancy documents first.
+        # Section A keeps the query's deadline ordering as the tie-breaker.
+        section_a.sort(key=lambda e: _RELEVANCY_RANK.get(e.relevancy, 1))
+        section_b.sort(key=lambda e: (_RELEVANCY_RANK.get(e.relevancy, 1), e.document_number))
 
     logger.info(
         "[DigestBuilder] %s — Section A: %d, Section B: %d, Section C: %d",
