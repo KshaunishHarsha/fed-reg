@@ -174,6 +174,11 @@ async def run_full_pipeline(target_date: Optional[str] = None) -> dict:
                         # "agency" so we can see WHY a doc was filtered, not just that
                         # it was. Empty pref set = no restriction on that axis.
                         def _keep(e, cats=allowed_categories, agencies=allowed_agencies):
+                            # Edge case: If a user unchecks ALL categories and ALL agencies, 
+                            # they are effectively pausing their subscription. Send nothing.
+                            if not cats and not agencies:
+                                return False, "none"
+                            
                             if cats and (e.regulation_category or "other").lower() not in cats:
                                 return False, "category"
                             if agencies and not any(
@@ -184,7 +189,7 @@ async def run_full_pipeline(target_date: Optional[str] = None) -> dict:
                                 return False, "agency"
                             return True, ""
 
-                        drops = {"category": 0, "agency": 0}
+                        drops = {"category": 0, "agency": 0, "none": 0}
 
                         def _filter(entries):
                             kept = []
