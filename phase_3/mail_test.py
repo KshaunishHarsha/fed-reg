@@ -160,7 +160,7 @@ def send_test_digest(
         recipients = load_test_recipients()
 
     subject = (
-        f"[TEST] Open Paws Federal Register Sentinel — "
+        f"Open Paws Federal Register Sentinel — "
         f"{digest_date.strftime('%B %d, %Y')}"
     )
 

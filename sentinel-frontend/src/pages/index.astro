@@ -768,9 +768,9 @@ import Layout from '../layouts/Layout.astro';
     status.textContent = '';
 
     try {
-      // Collect checkbox preferences
+      // Collect category + agency checkbox preferences
       const prefs = {};
-      document.querySelectorAll('#pref-grid input[type="checkbox"]').forEach(cb => {
+      document.querySelectorAll('#pref-grid input[type="checkbox"], #agency-grid input[type="checkbox"]').forEach(cb => {
         prefs[cb.name] = cb.checked;
       });
 
