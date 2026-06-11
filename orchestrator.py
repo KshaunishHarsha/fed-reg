@@ -164,20 +164,24 @@ async def run_full_pipeline(target_date: Optional[str] = None) -> dict:
                         # Zero-result path — send the circuit-breaker email unfiltered
                         personalized_package = package
                     else:
-                        # Filter each section by both category and agency preferences (AND logic).
-                        # A document appears only if its category AND at least one of its
-                        # agencies is in the subscriber's allowed sets.
+                        # Filter each section by category AND agency preferences.
+                        # A document passes if:
+                        #   - its regulation_category is in the subscriber's allowed categories
+                        #     (or allowed_categories is empty = no restriction)
+                        #   - AND at least one of its publishing agencies matches an allowed
+                        #     agency (or allowed_agencies is empty = no restriction)
                         def _keep(e, cats=allowed_categories, agencies=allowed_agencies):
-                            cat_ok = (e.regulation_category or "other").lower() in cats
-                            if not cat_ok:
+                            # Category check
+                            if cats and (e.regulation_category or "other").lower() not in cats:
                                 return False
-                            if not agencies:
-                                return False
-                            return any(
-                                canon.lower() in actual.lower()
-                                for canon in agencies
-                                for actual in e.agency_names
-                            )
+                            # Agency check — match canonical name as substring of FR API name
+                            if agencies:
+                                return any(
+                                    canon.lower() in actual.lower()
+                                    for canon in agencies
+                                    for actual in (e.agency_names or [])
+                                )
+                            return True  # no agency restriction
 
                         filtered_a = [e for e in package._section_a if _keep(e)]
                         filtered_b = [e for e in package._section_b if _keep(e)]
