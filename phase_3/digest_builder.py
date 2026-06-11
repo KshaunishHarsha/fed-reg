@@ -282,6 +282,7 @@ def _parse_llm_fields(row: DigestRow) -> Dict[str, Any]:
             "suggested_actions": [],
             "suggested_talking_points": [],
             "disclaimer": _DISCLAIMER,
+            "regulation_category": "",
         }
 
 
@@ -352,7 +353,10 @@ def build_digest(
                 document_number=row.document_number,
                 title=row.title,
                 agency_names=row.agency_names,
-                regulation_category=row.regulation_category,
+                # Prefer the animal-topic category from the LLM blob (welfare,
+                # wildlife, ...). Fall back to the documents column only for legacy
+                # rows whose blob predates the regulation_category element.
+                regulation_category=(llm.get("regulation_category") or row.regulation_category),
                 comments_close_on=row.comments_close_on,
                 effective_on=row.effective_on,
                 publication_date=row.publication_date,
@@ -405,6 +409,7 @@ def build_digest(
         "has_a": bool(section_a),
         "has_b": bool(section_b),
         "has_c": bool(section_c),
+        "category_labels": CATEGORY_LABELS,
         "total": len(rows),
         "disclaimer": _DISCLAIMER,
         "built_at": datetime.now(timezone.utc),

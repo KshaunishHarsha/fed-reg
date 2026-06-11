@@ -14,7 +14,7 @@ ACTION REQUIRED
 
 {% if entry.is_public_inspection %}*** PUBLIC INSPECTION DRAFT — dates may be preliminary ***
 {% endif %}{{ entry.agency_names | join(' / ') | upper }}
-{{ entry.relevancy | upper }} RELEVANCE | {% if entry.regulation_category %}{{ entry.regulation_category }} | {% endif %}Published {{ entry.publication_date.strftime('%B %d, %Y') }}{% if entry.summarization_tier %} | {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
+{{ entry.relevancy | upper }} RELEVANCE | {% if entry.regulation_category %}{{ category_labels.get(entry.regulation_category, entry.regulation_category) }} | {% endif %}Published {{ entry.publication_date.strftime('%B %d, %Y') }}{% if entry.summarization_tier %} | {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
 
 {{ entry.title }}
 {% if entry.comments_close_on %}
@@ -54,7 +54,7 @@ REGULATORY TRACKING
 
 {% if entry.is_public_inspection %}*** PUBLIC INSPECTION DRAFT — dates may be preliminary ***
 {% endif %}{{ entry.agency_names | join(' / ') | upper }}
-{{ entry.relevancy | upper }} RELEVANCE | {% if entry.regulation_category %}{{ entry.regulation_category }} | {% endif %}Published {{ entry.publication_date.strftime('%B %d, %Y') }}{% if entry.summarization_tier %} | {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
+{{ entry.relevancy | upper }} RELEVANCE | {% if entry.regulation_category %}{{ category_labels.get(entry.regulation_category, entry.regulation_category) }} | {% endif %}Published {{ entry.publication_date.strftime('%B %d, %Y') }}{% if entry.summarization_tier %} | {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
 
 {{ entry.title }}
 {% if entry.comments_close_on %}
@@ -95,7 +95,7 @@ POTENTIAL MATCHES
 {% if entry.is_needs_confirmation %}UNREVIEWED - ACT WITH CAUTION
 {% endif %}{% if entry.is_public_inspection %}*** PUBLIC INSPECTION DRAFT — dates may be preliminary ***
 {% endif %}{{ entry.agency_names | join(' / ') | upper }}
-{{ entry.relevancy | upper }} RELEVANCE | {% if entry.regulation_category %}{{ entry.regulation_category }} | {% endif %}Published {{ entry.publication_date.strftime('%B %d, %Y') }}{% if entry.summarization_tier %} | {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
+{{ entry.relevancy | upper }} RELEVANCE | {% if entry.regulation_category %}{{ category_labels.get(entry.regulation_category, entry.regulation_category) }} | {% endif %}Published {{ entry.publication_date.strftime('%B %d, %Y') }}{% if entry.summarization_tier %} | {% if entry.summarization_tier == 1 %}Abstract only{% elif entry.summarization_tier == 2 %}Document body{% else %}Full document{% endif %}{% endif %}
 
 {{ entry.title }}
 {% if entry.comments_close_on %}

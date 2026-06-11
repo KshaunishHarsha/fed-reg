@@ -9,6 +9,11 @@ def build_xml(summary: DocumentSummary) -> str:
     """
     root = ET.Element("regulatory_document_summary")
 
+    # Animal-topic category (welfare, wildlife, ...) — drives Phase 3 per-subscriber
+    # filtering and email category grouping. Distinct from the document type stored
+    # in documents.regulation_category by Phase 1.
+    ET.SubElement(root, "regulation_category").text = summary.regulation_category or ""
+
     ET.SubElement(root, "plain_language_summary").text = summary.plain_language_summary
     ET.SubElement(root, "advocacy_relevance").text = summary.advocacy_relevance
 

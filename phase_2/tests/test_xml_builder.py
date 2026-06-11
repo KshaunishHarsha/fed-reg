@@ -134,6 +134,7 @@ def test_xml_element_order():
     root = _parse(build_xml(_summary()))
     tags = [child.tag for child in root]
     assert tags == [
+        "regulation_category",
         "plain_language_summary",
         "advocacy_relevance",
         "suggested_actions",

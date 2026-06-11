@@ -81,4 +81,7 @@ def parse_xml_blob(xml_blob: str) -> Dict[str, Any]:
         "suggested_actions": _list("suggested_actions", "action"),
         "suggested_talking_points": _list("suggested_talking_points", "point"),
         "disclaimer": _text("disclaimer"),
+        # Animal-topic category — optional so legacy blobs without it don't fail
+        # validation. Used by the digest builder for filtering and grouping.
+        "regulation_category": (root.findtext("regulation_category") or "").strip(),
     }

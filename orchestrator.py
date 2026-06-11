@@ -170,22 +170,44 @@ async def run_full_pipeline(target_date: Optional[str] = None) -> dict:
                         #     (or allowed_categories is empty = no restriction)
                         #   - AND at least one of its publishing agencies matches an allowed
                         #     agency (or allowed_agencies is empty = no restriction)
+                        # Returns (kept, drop_reason). drop_reason is "category" or
+                        # "agency" so we can see WHY a doc was filtered, not just that
+                        # it was. Empty pref set = no restriction on that axis.
                         def _keep(e, cats=allowed_categories, agencies=allowed_agencies):
-                            # Category check
                             if cats and (e.regulation_category or "other").lower() not in cats:
-                                return False
-                            # Agency check — match canonical name as substring of FR API name
-                            if agencies:
-                                return any(
-                                    canon.lower() in actual.lower()
-                                    for canon in agencies
-                                    for actual in (e.agency_names or [])
-                                )
-                            return True  # no agency restriction
+                                return False, "category"
+                            if agencies and not any(
+                                canon.lower() in actual.lower()
+                                for canon in agencies
+                                for actual in (e.agency_names or [])
+                            ):
+                                return False, "agency"
+                            return True, ""
 
-                        filtered_a = [e for e in package._section_a if _keep(e)]
-                        filtered_b = [e for e in package._section_b if _keep(e)]
-                        filtered_c = [e for e in package._section_c if _keep(e)]
+                        drops = {"category": 0, "agency": 0}
+
+                        def _filter(entries):
+                            kept = []
+                            for e in entries:
+                                ok, reason = _keep(e)
+                                if ok:
+                                    kept.append(e)
+                                else:
+                                    drops[reason] += 1
+                            return kept
+
+                        filtered_a = _filter(package._section_a)
+                        filtered_b = _filter(package._section_b)
+                        filtered_c = _filter(package._section_c)
+
+                        total_in = len(package._section_a) + len(package._section_b) + len(package._section_c)
+                        total_kept = len(filtered_a) + len(filtered_b) + len(filtered_c)
+                        print(
+                            f"[Orchestrator] Filter for {email}: kept {total_kept}/{total_in} "
+                            f"(A:{len(filtered_a)} B:{len(filtered_b)}) — "
+                            f"dropped {drops['category']} on category, {drops['agency']} on agency. "
+                            f"prefs: {len(allowed_categories)} categories, {len(allowed_agencies)} agencies."
+                        )
 
                         # If they have NO matching docs at all, skip — don't send a blank email
                         if not filtered_a and not filtered_b and not filtered_c:
@@ -233,7 +255,9 @@ async def run_full_pipeline(target_date: Optional[str] = None) -> dict:
             else:
                 print("[Orchestrator] No active subscribers — email skipped, DEMO cleanup skipped.")
         except Exception as e:
-            print(f"[Orchestrator] Failed to send email: {e}")
+            import traceback
+            print(f"[Orchestrator] Failed to send email: {type(e).__name__}: {e}")
+            traceback.print_exc()
 
 
         # TODO Step 4: platform_handoff.send_digest(package)
