@@ -2,149 +2,403 @@
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout>
+<Layout title="Draft a Comment · Open Paws Sentinel">
 
-<main id="draft-main" style="display:none;">
+<style is:global>
+  /* ── Design tokens (mirror index.astro) ────────── */
+  :root {
+    --black:  #000;
+    --white:  #fff;
+    --teal:   #006C67;
+    --grey:   #555;
+    --border: #e0e0e0;
+    --soft:   #f7f7f7;
+    --text:   #111;
+    --muted:  #444;
+    --ink:    #111;
+    --indigo: #4F46E5;
+    --amber:  #B45309;
+  }
+
+  main {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 0 28px 72px;
+  }
+
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 44px;
+  }
+  .brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 17px;
+    color: var(--black);
+    letter-spacing: -0.01em;
+    text-decoration: none;
+  }
+  .brand span { color: var(--teal); }
+
+  .label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--indigo);
+    background: rgba(79, 70, 229, 0.06);
+    border: 1.5px solid rgba(79, 70, 229, 0.2);
+    padding: 4px 12px;
+    border-radius: 6px;
+  }
+
+  /* ── Cards ─────────────────────────────────────── */
+  .card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--white);
+    box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+  }
+
+  .meta-card {
+    padding: 24px 28px;
+    margin-bottom: 16px;
+    border-left: 4px solid var(--amber);
+  }
+
+  .draft-card {
+    padding: 28px 28px 24px;
+  }
+
+  /* ── Meta card internals ─────────────────────── */
+  .agency-line {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #9CA3AF;
+    margin-bottom: 8px;
+  }
+
+  .doc-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--black);
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    margin-bottom: 14px;
+  }
+
+  .meta-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .deadline-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--amber);
+    background: #FFFBEB;
+    border: 1px solid #FDE68A;
+    border-radius: 20px;
+    padding: 4px 12px;
+  }
+
+  .source-link {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--teal);
+    text-decoration: none;
+    letter-spacing: 0.01em;
+  }
+  .source-link:hover { text-decoration: underline; }
+
+  /* ── Draft card internals ─────────────────────── */
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #9CA3AF;
+    margin-bottom: 6px;
+  }
+
+  .draft-hint {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 16px;
+    padding: 10px 14px;
+    background: rgba(79, 70, 229, 0.04);
+    border: 1px solid rgba(79, 70, 229, 0.12);
+    border-radius: 8px;
+  }
+
+  .draft-hint strong { color: var(--indigo); }
+
+  #draft-text {
+    width: 100%;
+    min-height: 420px;
+    padding: 18px 20px;
+    box-sizing: border-box;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13.5px;
+    line-height: 1.85;
+    color: var(--ink);
+    background: #FAFBFC;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  #draft-text:focus {
+    border-color: var(--indigo);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    background: #fff;
+  }
+
+  /* ── Buttons ──────────────────────────────────── */
+  .btn-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.15s, transform 0.1s;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .btn-copy {
+    background: var(--teal);
+    color: #fff;
+  }
+  .btn-copy:hover:not(:disabled) { opacity: 0.85; }
+
+  .btn-submit {
+    background: #fff;
+    color: var(--amber);
+    border: 1.5px solid #F59E0B;
+  }
+  .btn-submit:hover { background: #FFFBEB; }
+
+  .copy-confirm {
+    display: none;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--teal);
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* ── Loading state ────────────────────────────── */
+  #loading-state {
+    text-align: center;
+    padding: 80px 24px;
+  }
+
+  .spinner-wrap {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(79,70,229,0.1), rgba(0,108,103,0.1));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+  }
+
+  .spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid rgba(79,70,229,0.15);
+    border-top-color: var(--indigo);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--black);
+    margin-bottom: 8px;
+  }
+  .loading-sub {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.65;
+    max-width: 380px;
+    margin: 0 auto;
+  }
+
+  /* ── Error state ─────────────────────────────── */
+  #error-state {
+    text-align: center;
+    padding: 80px 24px;
+    display: none;
+  }
+  .error-icon {
+    font-size: 44px;
+    margin-bottom: 16px;
+  }
+  .error-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--black);
+    margin-bottom: 10px;
+  }
+  .error-detail {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 440px;
+    margin: 0 auto 24px;
+    white-space: pre-line;
+  }
+
+  /* ── Disclaimer ──────────────────────────────── */
+  .disclaimer {
+    margin-top: 20px;
+    font-size: 11px;
+    color: #aaa;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  /* ── Animations ──────────────────────────────── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  #result-state { animation: fadeUp 0.35s ease; }
+</style>
+
+<main id="draft-main">
 
   <!-- NAV -->
   <nav>
-    <a class="brand" href="/" style="text-decoration:none;">
-      Open<span>Paws</span> · Federal Register Sentinel
-    </a>
+    <a class="brand" href="/">Open<span>Paws</span> · Federal Register Sentinel</a>
     <span class="label">Draft a Comment</span>
   </nav>
 
   <!-- LOADING STATE -->
-  <div id="loading-state" style="text-align:center; padding: 80px 24px;">
-    <div class="spinner-lg"></div>
-    <p style="margin: 24px 0 8px; font-size: 16px; font-weight: 600; color: var(--ink);">
-      Generating your draft comment…
-    </p>
-    <p style="margin: 0; font-size: 13px; color: var(--muted);">
-      Analyzing the proposed rule and drafting a formal comment letter. This takes a few seconds.
+  <div id="loading-state">
+    <div class="spinner-wrap">
+      <div class="spinner"></div>
+    </div>
+    <p class="loading-title">Generating your draft…</p>
+    <p class="loading-sub">
+      Reading the proposed rule's talking points and drafting a formal public comment letter. This takes a few seconds.
     </p>
   </div>
 
-  <!-- ERROR STATE (hidden by default) -->
-  <div id="error-state" style="display:none; text-align:center; padding: 80px 24px;">
-    <p style="font-size: 40px; margin: 0 0 16px;">⚠️</p>
-    <p id="error-title" style="margin: 0 0 8px; font-size: 18px; font-weight: 700; color: var(--ink);">
-      Could not generate draft
-    </p>
-    <p id="error-detail" style="margin: 0 0 24px; font-size: 14px; color: var(--muted); line-height: 1.6;"></p>
-    <a href="/" class="btn btn-teal" style="display:inline-flex;">← Back to dashboard</a>
+  <!-- ERROR STATE -->
+  <div id="error-state">
+    <div class="error-icon">⚠️</div>
+    <p id="error-title" class="error-title">Could not generate draft</p>
+    <p id="error-detail" class="error-detail"></p>
+    <a href="/" class="btn btn-copy">← Back to dashboard</a>
   </div>
 
-  <!-- RESULT STATE (hidden by default) -->
-  <div id="result-state" style="display:none; max-width: 720px; margin: 0 auto; padding: 0 0 64px;">
+  <!-- RESULT STATE -->
+  <div id="result-state" style="display:none;">
 
-    <!-- Meta header -->
-    <div class="panel" style="margin-bottom: 20px; padding: 24px 28px;">
-      <p id="result-agency" style="margin: 0 0 6px; font-size: 10px; font-weight: 700;
-        letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);"></p>
-      <p id="result-title" style="margin: 0 0 10px; font-size: 18px; font-weight: 700;
-        color: var(--ink); line-height: 1.35;"></p>
-      <div style="display:flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-        <span id="result-deadline" style="display:none; font-size: 12px; font-weight: 600;
-          color: #B45309; background:#FFFBEB; border:1px solid #FDE68A;
-          border-radius: 6px; padding: 4px 12px;">⏰ <span id="deadline-text"></span></span>
-        <a id="result-source" href="#" target="_blank"
-          style="font-size: 12px; font-weight: 600; color: var(--teal); text-decoration: none;">
+    <!-- Document meta -->
+    <div class="card meta-card">
+      <p id="result-agency" class="agency-line"></p>
+      <p id="result-title" class="doc-title"></p>
+      <div class="meta-row">
+        <span id="result-deadline" class="deadline-pill" style="display:none;">
+          ⏰ <span id="deadline-text"></span>
+        </span>
+        <a id="result-source" href="#" target="_blank" class="source-link">
           View on FederalRegister.gov ↗
         </a>
       </div>
     </div>
 
     <!-- Draft letter -->
-    <div class="panel" style="padding: 24px 28px;">
-      <p class="panel-label" style="margin-bottom: 12px;">Draft Public Comment</p>
-      <p style="margin: 0 0 16px; font-size: 13px; color: var(--muted); line-height: 1.6;">
-        This letter was generated from the rule's talking points. Edit freely before submitting —
-        replace <strong>[Your Name/Organization]</strong> with your details.
-      </p>
-      <textarea id="draft-text"
-        style="width: 100%; min-height: 400px; padding: 16px; box-sizing: border-box;
-          font-family: 'Space Grotesk', sans-serif; font-size: 13px; line-height: 1.8;
-          color: var(--ink); background: #FAFBFC; border: 1px solid var(--border);
-          border-radius: 10px; resize: vertical; outline: none;"
-        spellcheck="true"></textarea>
+    <div class="card draft-card">
+      <p class="section-label">Draft Public Comment Letter</p>
+      <div class="draft-hint">
+        Edit freely before submitting. Replace <strong>[Your Name/Organization]</strong> with your details.
+        Copy the text, then paste it directly on Regulations.gov.
+      </div>
 
-      <!-- Action buttons -->
-      <div style="display:flex; gap: 10px; margin-top: 16px; flex-wrap: wrap;">
-        <button id="copy-btn" class="btn btn-teal" onclick="copyDraft()">
+      <textarea id="draft-text" spellcheck="true"></textarea>
+
+      <div class="btn-row">
+        <button id="copy-btn" class="btn btn-copy" onclick="copyDraft()">
           Copy to Clipboard
         </button>
-        <a id="submit-btn" href="#" target="_blank" class="btn"
-          style="background: #FFFFFF; border: 1.5px solid #F59E0B; color: #B45309;
-            text-decoration: none; display: none;">
+        <a id="submit-btn" href="#" target="_blank" class="btn btn-submit" style="display:none;">
           Submit on Regulations.gov ↗
         </a>
+        <span id="copy-confirm" class="copy-confirm">✓ Copied</span>
       </div>
-      <p id="copy-confirm" style="display:none; margin: 10px 0 0; font-size: 12px;
-        color: #047857; font-weight: 600;">✓ Copied to clipboard</p>
     </div>
 
-    <!-- Disclaimer -->
-    <p style="margin: 16px 0 0; font-size: 11px; color: var(--muted); text-align: center; line-height: 1.6;">
-      This draft is informational only and does not constitute legal advice.
-      Review carefully before submission.
+    <p class="disclaimer">
+      This draft is informational only and does not constitute legal advice. Review carefully before submission.
     </p>
+
   </div>
 
 </main>
 
-</Layout>
-
-<style>
-  /* Spinner */
-  .spinner-lg {
-    width: 48px;
-    height: 48px;
-    border: 4px solid var(--border);
-    border-top-color: var(--teal);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* Textarea focus */
-  #draft-text:focus {
-    border-color: var(--teal);
-    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.12);
-  }
-</style>
-
 <script>
   const API = import.meta.env.PUBLIC_API_URL ?? '';
 
-  // ── Show main once ready ───────────────────────────────────────────────────
-  document.getElementById('draft-main').style.display = '';
-
-  // ── Read doc param from URL ────────────────────────────────────────────────
   const params = new URLSearchParams(window.location.search);
   const docNum = params.get('doc');
 
   if (!docNum) {
-    showError('No document specified', 'Add ?doc=<document-number> to the URL.');
+    showError('No document specified', 'Add ?doc=<document-number> to the URL.\n\nExample: /draft?doc=2026-12345');
   } else {
     loadDraft(docNum);
   }
 
-  // ── Fetch draft from backend ───────────────────────────────────────────────
   async function loadDraft(documentNumber) {
     try {
-      const res = await fetch(`${API}/phase2/draft-comment?document_number=${encodeURIComponent(documentNumber)}`);
+      const res  = await fetch(`${API}/phase2/draft-comment?document_number=${encodeURIComponent(documentNumber)}`);
       const data = await res.json();
 
       if (!res.ok) {
-        // data.detail comes from FastAPI's HTTPException
         const detail = data.detail ?? 'An unexpected error occurred.';
         if (res.status === 404) {
           showError(
             'Document not found',
-            detail + '\n\nNote: in demo mode the database is cleared after each pipeline run. ' +
-            'Re-run the pipeline for this date and click Draft a Comment again.'
+            detail +
+            '\n\nNote: in demo mode the database is cleared after each pipeline run.\n' +
+            'Re-run the pipeline for this date and click "Draft a Comment" again.'
           );
         } else {
           showError('Could not generate draft', detail);
@@ -154,18 +408,15 @@ import Layout from '../layouts/Layout.astro';
 
       populateResult(data);
     } catch (err) {
-      showError('Network error', 'Could not reach the server. Check that Railway is running. (' + err.message + ')');
+      showError('Network error', 'Could not reach the server. Check that Railway is running.\n(' + err.message + ')');
     }
   }
 
-  // ── Populate the result UI ─────────────────────────────────────────────────
   function populateResult(data) {
-    // Meta
     document.getElementById('result-agency').textContent =
       Array.isArray(data.agency_names) ? data.agency_names.join(' · ') : '';
     document.getElementById('result-title').textContent = data.title ?? '';
 
-    // Source link
     const sourceEl = document.getElementById('result-source');
     if (data.source_url) {
       sourceEl.href = data.source_url;
@@ -173,48 +424,42 @@ import Layout from '../layouts/Layout.astro';
       sourceEl.style.display = 'none';
     }
 
-    // Comment deadline
     if (data.comments_close_on) {
+      const d = new Date(data.comments_close_on);
       document.getElementById('deadline-text').textContent =
-        'Comment deadline: ' + new Date(data.comments_close_on).toLocaleDateString('en-US', {
-          month: 'long', day: 'numeric', year: 'numeric'
-        });
-      document.getElementById('result-deadline').style.display = 'inline-block';
+        'Comment deadline: ' + d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      document.getElementById('result-deadline').style.display = 'inline-flex';
     }
 
-    // Draft letter
     document.getElementById('draft-text').value = data.draft_comment ?? '';
 
-    // Regulations.gov submit button — only shown if docket URL exists
     if (data.regulations_gov_url) {
       const submitBtn = document.getElementById('submit-btn');
       submitBtn.href = data.regulations_gov_url;
       submitBtn.style.display = 'inline-flex';
     }
 
-    // Swap states
     document.getElementById('loading-state').style.display = 'none';
-    document.getElementById('result-state').style.display = '';
+    document.getElementById('result-state').style.display  = '';
   }
 
-  // ── Show error state ───────────────────────────────────────────────────────
   function showError(title, detail) {
     document.getElementById('loading-state').style.display = 'none';
-    document.getElementById('error-title').textContent = title;
+    document.getElementById('error-title').textContent  = title;
     document.getElementById('error-detail').textContent = detail;
     document.getElementById('error-state').style.display = '';
   }
 
-  // ── Copy to clipboard ──────────────────────────────────────────────────────
   function copyDraft() {
     const text = document.getElementById('draft-text').value;
     navigator.clipboard.writeText(text).then(() => {
-      const confirm = document.getElementById('copy-confirm');
-      confirm.style.display = 'block';
-      setTimeout(() => { confirm.style.display = 'none'; }, 2500);
+      const el = document.getElementById('copy-confirm');
+      el.style.display = 'inline-flex';
+      setTimeout(() => { el.style.display = 'none'; }, 2500);
     });
   }
 
-  // expose to onclick
   window.copyDraft = copyDraft;
 </script>
+
+</Layout>
