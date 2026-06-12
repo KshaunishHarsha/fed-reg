@@ -68,6 +68,7 @@ fed-reg/
 │
 ├── sentinel-frontend/      # Astro static site — primary demo UI, deployed to Vercel
 │   ├── src/pages/index.astro   # Main page: login gate + pipeline trigger + subscriber panel
+│   ├── src/pages/draft.astro   # Draft a comment UI (consumes /phase2/draft-comment)
 │   ├── src/layouts/Layout.astro
 │   ├── public/             # ALDF + OpenPaws logos
 │   └── astro.config.mjs
@@ -133,6 +134,8 @@ fed-reg/
 | `SMTP_FROM` | Phase 3 `mail_test.py` | Sender display string |
 | `ALLOWED_ORIGINS` | `main.py` CORS middleware | Comma-separated allowed origins. Set to Vercel URL in production. |
 | `PUBLIC_PASSWORD` | `sentinel-frontend` (Astro build-time) | Demo login password. Set in Vercel env vars. Empty = gate disabled. |
+| `PUBLIC_API_URL` | `sentinel-frontend` (Astro build-time) | Railway backend URL used by Astro client-side (e.g., in `draft.astro`). |
+| `FRONTEND_URL` | Phase 3 `digest_builder.py` | Vercel frontend URL. Used to generate "Draft a Comment" deep-links in the digest email. |
 
 How each phase loads `.env`:
 - Phase 1 + 2: `load_dotenv(Path(__file__).parent.parent / ".env")`
@@ -557,6 +560,7 @@ Defined in `AGENCY_PREF_COLUMNS` in `phase_3/mailing_list.py`. Matching uses sub
 - JS reads all checkboxes by name and POSTs `{email, preferences: {pref_*: bool, pref_agency_*: bool}}` to `POST /phase3/subscribe`.
 - Subscriber list renders category tags (grey) and agency tags (teal) under each row.
 - `PATCH /phase3/preferences` endpoint accepts any mix of `pref_*` and `pref_agency_*` keys.
+- **Draft a Comment Page (`/draft?doc=...`)**: Fetches the draft comment directly from `GET /phase2/draft-comment` on page load, displaying a spinner and handling 404/502 errors gracefully. Displays a copy-to-clipboard button and a "Submit on Regulations.gov" link.
 
 ---
 
