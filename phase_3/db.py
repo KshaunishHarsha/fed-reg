@@ -9,7 +9,7 @@ through text() to stay close to the schema as written in schema.sql.
 DATABASE_URL must be set in the environment before the app starts, e.g.:
     DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/dbname
 
-Only Phase 3 code imports from this module. Phase 1 and Phase 2 manage their
+Only Phase 3 code imports from this module. Phase 1, Phase 2 manage their
 own database connections independently.
 """
 
