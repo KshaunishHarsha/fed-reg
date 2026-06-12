@@ -37,6 +37,7 @@ Relevancy (separate axis — from `documents.confidence`):
 from __future__ import annotations
 
 import logging
+import os
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -413,6 +414,9 @@ def build_digest(
         "total": len(rows),
         "disclaimer": _DISCLAIMER,
         "built_at": datetime.now(timezone.utc),
+        # URL of the Astro frontend — used to build "Draft a Comment" deep-links
+        # in Section A cards. Leave unset (or empty) to hide the button.
+        "frontend_url": os.environ.get("FRONTEND_URL", "").rstrip("/"),
     }
 
     html_body = _jinja_env.get_template("digest_email.html").render(**template_ctx)
