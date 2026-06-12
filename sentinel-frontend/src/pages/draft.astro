@@ -1,0 +1,220 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout>
+
+<main id="draft-main" style="display:none;">
+
+  <!-- NAV -->
+  <nav>
+    <a class="brand" href="/" style="text-decoration:none;">
+      Open<span>Paws</span> · Federal Register Sentinel
+    </a>
+    <span class="label">DRAFT A COMMENT</span>
+  </nav>
+
+  <!-- LOADING STATE -->
+  <div id="loading-state" style="text-align:center; padding: 80px 24px;">
+    <div class="spinner-lg"></div>
+    <p style="margin: 24px 0 8px; font-size: 16px; font-weight: 600; color: var(--ink);">
+      Generating your draft comment…
+    </p>
+    <p style="margin: 0; font-size: 13px; color: var(--muted);">
+      Analyzing the proposed rule and drafting a formal comment letter. This takes a few seconds.
+    </p>
+  </div>
+
+  <!-- ERROR STATE (hidden by default) -->
+  <div id="error-state" style="display:none; text-align:center; padding: 80px 24px;">
+    <p style="font-size: 40px; margin: 0 0 16px;">⚠️</p>
+    <p id="error-title" style="margin: 0 0 8px; font-size: 18px; font-weight: 700; color: var(--ink);">
+      Could not generate draft
+    </p>
+    <p id="error-detail" style="margin: 0 0 24px; font-size: 14px; color: var(--muted); line-height: 1.6;"></p>
+    <a href="/" class="btn btn-teal" style="display:inline-flex;">← Back to dashboard</a>
+  </div>
+
+  <!-- RESULT STATE (hidden by default) -->
+  <div id="result-state" style="display:none; max-width: 720px; margin: 0 auto; padding: 0 0 64px;">
+
+    <!-- Meta header -->
+    <div class="panel" style="margin-bottom: 20px; padding: 24px 28px;">
+      <p id="result-agency" style="margin: 0 0 6px; font-size: 10px; font-weight: 700;
+        letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);"></p>
+      <p id="result-title" style="margin: 0 0 10px; font-size: 18px; font-weight: 700;
+        color: var(--ink); line-height: 1.35;"></p>
+      <div style="display:flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+        <span id="result-deadline" style="display:none; font-size: 12px; font-weight: 600;
+          color: #B45309; background:#FFFBEB; border:1px solid #FDE68A;
+          border-radius: 6px; padding: 4px 12px;">⏰ <span id="deadline-text"></span></span>
+        <a id="result-source" href="#" target="_blank"
+          style="font-size: 12px; font-weight: 600; color: var(--teal); text-decoration: none;">
+          View on FederalRegister.gov ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- Draft letter -->
+    <div class="panel" style="padding: 24px 28px;">
+      <p class="panel-label" style="margin-bottom: 12px;">Draft Public Comment</p>
+      <p style="margin: 0 0 16px; font-size: 13px; color: var(--muted); line-height: 1.6;">
+        This letter was generated from the rule's talking points. Edit freely before submitting —
+        replace <strong>[Your Name/Organization]</strong> with your details.
+      </p>
+      <textarea id="draft-text"
+        style="width: 100%; min-height: 400px; padding: 16px; box-sizing: border-box;
+          font-family: 'Space Grotesk', sans-serif; font-size: 13px; line-height: 1.8;
+          color: var(--ink); background: #FAFBFC; border: 1px solid var(--border);
+          border-radius: 10px; resize: vertical; outline: none;"
+        spellcheck="true"></textarea>
+
+      <!-- Action buttons -->
+      <div style="display:flex; gap: 10px; margin-top: 16px; flex-wrap: wrap;">
+        <button id="copy-btn" class="btn btn-teal" onclick="copyDraft()">
+          Copy to Clipboard
+        </button>
+        <a id="submit-btn" href="#" target="_blank" class="btn"
+          style="background: #FFFFFF; border: 1.5px solid #F59E0B; color: #B45309;
+            text-decoration: none; display: none;">
+          Submit on Regulations.gov ↗
+        </a>
+      </div>
+      <p id="copy-confirm" style="display:none; margin: 10px 0 0; font-size: 12px;
+        color: #047857; font-weight: 600;">✓ Copied to clipboard</p>
+    </div>
+
+    <!-- Disclaimer -->
+    <p style="margin: 16px 0 0; font-size: 11px; color: var(--muted); text-align: center; line-height: 1.6;">
+      This draft is informational only and does not constitute legal advice.
+      Review carefully before submission.
+    </p>
+  </div>
+
+</main>
+
+</Layout>
+
+<style>
+  /* Spinner */
+  .spinner-lg {
+    width: 48px;
+    height: 48px;
+    border: 4px solid var(--border);
+    border-top-color: var(--teal);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Textarea focus */
+  #draft-text:focus {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.12);
+  }
+</style>
+
+<script>
+  const API = import.meta.env.PUBLIC_API_URL ?? '';
+
+  // ── Show main once ready ───────────────────────────────────────────────────
+  document.getElementById('draft-main').style.display = '';
+
+  // ── Read doc param from URL ────────────────────────────────────────────────
+  const params = new URLSearchParams(window.location.search);
+  const docNum = params.get('doc');
+
+  if (!docNum) {
+    showError('No document specified', 'Add ?doc=<document-number> to the URL.');
+  } else {
+    loadDraft(docNum);
+  }
+
+  // ── Fetch draft from backend ───────────────────────────────────────────────
+  async function loadDraft(documentNumber) {
+    try {
+      const res = await fetch(`${API}/phase2/draft-comment?document_number=${encodeURIComponent(documentNumber)}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        // data.detail comes from FastAPI's HTTPException
+        const detail = data.detail ?? 'An unexpected error occurred.';
+        if (res.status === 404) {
+          showError(
+            'Document not found',
+            detail + '\n\nNote: in demo mode the database is cleared after each pipeline run. ' +
+            'Re-run the pipeline for this date and click Draft a Comment again.'
+          );
+        } else {
+          showError('Could not generate draft', detail);
+        }
+        return;
+      }
+
+      populateResult(data);
+    } catch (err) {
+      showError('Network error', 'Could not reach the server. Check that Railway is running. (' + err.message + ')');
+    }
+  }
+
+  // ── Populate the result UI ─────────────────────────────────────────────────
+  function populateResult(data) {
+    // Meta
+    document.getElementById('result-agency').textContent =
+      Array.isArray(data.agency_names) ? data.agency_names.join(' · ') : '';
+    document.getElementById('result-title').textContent = data.title ?? '';
+
+    // Source link
+    const sourceEl = document.getElementById('result-source');
+    if (data.source_url) {
+      sourceEl.href = data.source_url;
+    } else {
+      sourceEl.style.display = 'none';
+    }
+
+    // Comment deadline
+    if (data.comments_close_on) {
+      document.getElementById('deadline-text').textContent =
+        'Comment deadline: ' + new Date(data.comments_close_on).toLocaleDateString('en-US', {
+          month: 'long', day: 'numeric', year: 'numeric'
+        });
+      document.getElementById('result-deadline').style.display = 'inline-block';
+    }
+
+    // Draft letter
+    document.getElementById('draft-text').value = data.draft_comment ?? '';
+
+    // Regulations.gov submit button — only shown if docket URL exists
+    if (data.regulations_gov_url) {
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.href = data.regulations_gov_url;
+      submitBtn.style.display = 'inline-flex';
+    }
+
+    // Swap states
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('result-state').style.display = '';
+  }
+
+  // ── Show error state ───────────────────────────────────────────────────────
+  function showError(title, detail) {
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('error-title').textContent = title;
+    document.getElementById('error-detail').textContent = detail;
+    document.getElementById('error-state').style.display = '';
+  }
+
+  // ── Copy to clipboard ──────────────────────────────────────────────────────
+  function copyDraft() {
+    const text = document.getElementById('draft-text').value;
+    navigator.clipboard.writeText(text).then(() => {
+      const confirm = document.getElementById('copy-confirm');
+      confirm.style.display = 'block';
+      setTimeout(() => { confirm.style.display = 'none'; }, 2500);
+    });
+  }
+
+  // expose to onclick
+  window.copyDraft = copyDraft;
+</script>
