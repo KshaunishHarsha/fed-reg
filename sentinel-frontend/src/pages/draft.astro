@@ -440,14 +440,14 @@ import Layout from '../layouts/Layout.astro';
     }
 
     document.getElementById('loading-state').style.display = 'none';
-    document.getElementById('result-state').style.display  = '';
+    document.getElementById('result-state').style.display  = 'block';
   }
 
   function showError(title, detail) {
     document.getElementById('loading-state').style.display = 'none';
     document.getElementById('error-title').textContent  = title;
     document.getElementById('error-detail').textContent = detail;
-    document.getElementById('error-state').style.display = '';
+    document.getElementById('error-state').style.display = 'block';
   }
 
   function copyDraft() {
