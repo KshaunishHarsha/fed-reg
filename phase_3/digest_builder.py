@@ -232,18 +232,19 @@ def _classify_section(row: DigestRow, today: date) -> str:
     Assign one of two digest sections based on DB fields only. Relevancy is a
     separate axis (the HIGH/MEDIUM/LOW badge) and no longer affects the section.
 
-    Section A — Proposed rules WITH an active (future/today) comment window.
+    Section A — Any document WITH an active (future/today) comment window.
                 The only actionable section: a comment can still be filed.
-    Section B — Everything else relevant: final rules, notices, expired
-                proposed rules, and any other document type. Tracking only.
+                Includes NOTICEs that reopen comment periods — the FR API often
+                files these as NOTICE type rather than PRORULE.
+    Section B — Everything else: final rules, notices with no/expired comment
+                window, and any other document type. Tracking only.
     """
-    doc_type = (row.type or "").upper()
     has_open_comment = (
         row.comments_close_on is not None
         and row.comments_close_on >= today
     )
 
-    if doc_type == "PRORULE" and has_open_comment:
+    if has_open_comment:
         return "A"
 
     return "B"
