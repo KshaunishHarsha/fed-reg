@@ -9,7 +9,7 @@
 
 Automated regulatory monitoring tool for the **Animal Legal Defense Fund (ALDF)**, integrated into their **Open Paws** platform. Replaces manual daily Federal Register review by attorneys and policy staff.
 
-Built by a two-person team. Primary stakeholder/reviewer: **Chris** (ALDF). Feedback from Chris drives the next iteration of work.
+Built by a two-person team. Primary stakeholder/reviewer: **Chris** (Open Paws). Feedback from Chris drives the next iteration of work.
 
 Every morning the full system:
 1. Pulls that day's Federal Register publications from 7 target agencies (Phase 1)
