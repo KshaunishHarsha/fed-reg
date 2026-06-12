@@ -91,6 +91,7 @@ fed-reg/
 │   ├── boilerplate_pruner.py # Tier 2: fetch body_html_url, strip noise sections
 │   ├── tier_router.py      # Route by page_length → Tier 1 / 2 / 3
 │   ├── summarizer.py       # GPT-4o-mini via OpenRouter, temp=0, instructor self-correct
+│   ├── comment_drafter.py  # "Draft a Comment" — on-demand public comment letter from stored talking points
 │   ├── database.py         # Async SQLAlchemy raw SQL
 │   ├── pipeline.py         # Orchestrator — accepts phase3_ingest_fn callback
 │   ├── api.py              # APIRouter included in main.py
@@ -225,6 +226,7 @@ POST /run  (main.py)               ← production cron entry point
 | `GET /health` | `main.py` | Liveness check |
 | `POST /phase2/run` | `phase_2/api.py` | Phase 2 standalone — no Phase 3 callback |
 | `POST /phase2/correct` | `phase_2/api.py` | Correction hook — reruns LLM for one doc |
+| `GET /phase2/draft-comment?document_number=...` | `phase_2/api.py` | "Draft a Comment" — generates a public comment letter from stored talking points |
 | `POST /phase3/run` | `phase_3/router.py` | Legacy cron path (calls Phase 1+2 via HTTP env vars — superseded by `POST /run`) |
 | `POST /phase3/ingest` | `phase_3/router.py` | Per-document validate + persist |
 | `GET /phase3/status/{doc_num}` | `phase_3/router.py` | Read `documents.pipeline_state` |
@@ -388,6 +390,16 @@ All LLM calls use `temperature=0` for deterministic, auditable output.
 
 ### Boilerplate pruner fetches body_html_url per Tier 2 call
 Phase 1 doesn't store `body_html_url`. For every Tier 2 doc, `boilerplate_pruner.py` makes one additional FR API call: `GET /api/v1/documents/{doc_num}.json?fields[]=body_html_url`.
+
+### Draft a Comment (`comment_drafter.py`)
+On-demand public comment letter for a proposed rule, triggered by a button in the digest email (Section A docs). Endpoint: `GET /phase2/draft-comment?document_number=...`.
+
+- **Lives in Phase 2, not Phase 3.** Phase 3 forbids LLM calls (design rule #2), so the LLM drafting endpoint is `/phase2/draft-comment`, not `/phase3/`. The frontend calls Phase 2 directly.
+- **Reuses, never re-reads.** It does NOT re-fetch the source PDF. It pulls the `advocacy_relevance` + `suggested_talking_points` already stored in `summaries.xml_summary_blob` from the morning run, so the model only writes prose. Fast (~few seconds) and cheap.
+- One GPT-4o-mini call via OpenRouter, `temperature=0`, no `instructor` (freeform text output, not a Pydantic model). The blocking call runs in `asyncio.to_thread` so it never blocks the event loop.
+- Inputs (title, agencies, talking points) are wrapped in `<document_payload>` and URL-stripped, same prompt-injection convention as `summarizer.py`. The letter uses a literal `[Your Name/Organization]` placeholder.
+- Returns `{document_number, title, agency_names, comments_close_on, source_url, regulations_gov_url, draft_comment}`. `regulations_gov_url` is built from `documents.comment_url` (docket ID → `commentOn?D=...`, or used as-is if already a URL).
+- Errors raise `DraftCommentError` with an HTTP-style `.status` (404 doc/summary missing, 502 empty model output), surfaced by the endpoint as `HTTPException`.
 
 ---
 

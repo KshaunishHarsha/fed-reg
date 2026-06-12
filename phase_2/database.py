@@ -59,6 +59,20 @@ async def fetch_document_by_number(document_number: str) -> Optional[DocumentRec
     return _row_to_record(row) if row else None
 
 
+async def fetch_summary_blob(document_number: str) -> Optional[str]:
+    """Fetch the stored xml_summary_blob for a document, or None if not summarized yet."""
+    async with _get_engine().begin() as conn:
+        result = await conn.execute(text("""
+            SELECT xml_summary_blob
+            FROM summaries
+            WHERE document_number = :doc_num
+            LIMIT 1
+        """), {"doc_num": document_number})
+        row = result.mappings().fetchone()
+
+    return row["xml_summary_blob"] if row else None
+
+
 async def save_summary(
     document_number: str,
     xml_summary_blob: str,
